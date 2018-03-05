@@ -3,7 +3,7 @@ Spindle controller/manager for embedded CNC controllers, like GRBL, Smoothie, an
 
 The purpose of this project is to create a spindle managment solution for embedded systems. This project was designed to run on the Atmel 328 chip. (generic Arduino)
 
-Primary principle of operation is to read an input value. (either via serial or analog input). When analog input is used the voltage will vary from 0-5 volts, depending on desired speed. If serial is used, a value indicating the RPM value of the spindle is sent. A 2 channel optical (90 degree offset) encoder should be utilized in your hardware, regardless of the control method used. These are available online for $10-$20. A quadrature encoder is not needed for this purpose. (More on this later)
+Primary principle of operation is to read an input value. (either via serial or analog input). When analog input is used the voltage will vary from 0-5 volts (PWM), depending on desired speed. If serial is used, a value indicating the RPM value of the spindle is sent. A 2 channel optical (90 degree offset) encoder should be utilized in your hardware, regardless of the control method used. These are available online for $10-$20. This is typically a quadrature encoder, but some refer to them as a 2channel encoder (More on this later)
 
 When host is refered to, It refers either to a pc, raspberry pi, etc, or the grblRTC project. When controller or machine controller is refered to, it refers to grbl genericly. Although I believe it would work with any simple embedded soltuion, I only have a grbl controller for testing and development, and because msot other embedded solution copied grbl to being with, I feel like staying with something I am familiar with is teh easiest route.
 
@@ -21,7 +21,7 @@ The Basics (In my case the host is an arduino 2560 running grblRTC, but a pc or 
 
 Spindle synchronization
 1. The host commands the spindle to synchronize with an axis. The axis can be X, Y, or Z. 
-2. Since we are using a 2 channel optical encoder, we can determine the spindle direction by simply checking which signal line goes high first. If A is high first, then B, the rotation is CW. If B is high first, then A the rotation is CCW.
+2. Since we are using a 2 channel optical encoder, we can determine the spindle direction by simply checking which signal line goes high first. If A is high first, then B, the rotation is CW. If B is high first, then A, the rotation is CCW.
 3. There are 2 options from here:
 <br>a. Using the grblRTC as the host, pulse values are sent from the spindle control to the host and the direction line is set high/low depending on spindle direction. If the spindle is moved at all the axis (X,Y,Z) will move at the specified rate per rotation, and in the corresponding direction of rotation. This pulse value is repeated directly to the stepper controller NOT through the machine controller. When spindle synchronization is turned off, the axis is returned to the location it began at before spindle synchronization was active.This keeping the machine controller in synch with where teh axis is acatully at.<br>b. Using a pc/pi as a host, when spindle synchronization is active, the angle and direction of the spindle movement is sent to the host. The host can then echo a jog command to the machine controller. As the spindle is rotated the axis will jog and move at a rate corresponding to the spindle rotation speed. It is not necessary to return the axis to its starting point since the machien controller will know the axis current location.
 
