@@ -1,6 +1,8 @@
 # spinMAN
 Spindle controller/manager for embedded CNC controllers, like GRBL, Smoothie, and Tiny G.
 
+#I will be HAL'ifying this project shortly. it will be embedded into the Talos-CNC project as well. I hope to have this done before the end of February 2019. 
+
 The purpose of this project is to create a spindle managment solution for embedded systems. This project was designed to run on the Atmel 328 chip. (generic Arduino)
 
 Primary principle of operation is to read an input value. (either via serial or analog input). When analog input is used the voltage will vary from 0-5 volts (PWM), depending on desired speed. If serial is used, a value indicating the RPM value of the spindle is sent. A 2 channel optical (90 degree offset) encoder should be utilized in your hardware, regardless of the control method used. These are available online for $10-$20. This is typically a quadrature encoder, but some refer to them as a 2channel encoder (More on this later)
