@@ -1,7 +1,7 @@
 # spinMAN
 Spindle controller/manager for embedded CNC controllers, like GRBL, Smoothie, and Tiny G.
 
-# I will be HAL'ifying this project shortly. it will be embedded into the Talos-CNC project as well. I hope to have this done before the end of February 2019. Again, I see cloners, so if anyone would like to help with these projects I would appreciate it.
+# There is now a HAL version of this in the Talos repository (https://github.com/shooter64738/Talos-CNC)
 
 The purpose of this project is to create a spindle managment solution for embedded systems. This project was designed to run on the Atmel 328 chip. (generic Arduino)
 
