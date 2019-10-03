@@ -26,7 +26,7 @@
 #define PWM_OUTPUT_PIN PD6 //(pin 6 )
 
 #define encoder_ticks_per_rev 400.0
-#define frq_gate_time_ms 500
+#define frq_gate_time_ms 500.0
 #define rpm_gate_time_ms 125
 #define rpm_buffer_size 8
 #define milliseconds_per_second 1000
@@ -131,9 +131,13 @@ namespace Spin
 					e_error = set_point - actual;
 					p_proportional_variable = Kp * e_error;
 					i_integral_variable += (e_error * (t_time!=0?t_time:1));
+					
+					if(i_integral_variable > Max_Val) i_integral_variable= Max_Val;
+					else if(i_integral_variable < Min_Val) i_integral_variable= Min_Val;
+					
 					d_derivative_variable = (e_error-e_error_last)/(t_time!=0?t_time:1);
 					cv_control_variable = (Kp*e_error) + (Ki*i_integral_variable) + (Kd * d_derivative_variable);
-					
+									
 					
 					//return cv_control_variable;
 					

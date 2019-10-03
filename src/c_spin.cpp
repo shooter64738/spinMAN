@@ -70,12 +70,10 @@ void Spin::Input::Controls::run()
 		if (pid_interval)
 		{
 			pid_interval = 0;
-			update_pid(Spin::Input::Controls::Control.Step.Value, Spin::Input::Controls::Control.Rpm.Value);
+			//update_pid(Spin::Input::Controls::Control.Step.Value, Spin::Input::Controls::Control.Rpm.Value);
 			
 			{
-				//Spin::Input::Controls::host_serial.print_string("new pid value:");
-				//Spin::Input::Controls::host_serial.print_float(active_pid_mode->Max_Val-abs(active_pid_mode->cv_control_variable));
-				//Spin::Input::Controls::host_serial.print_string("\r");
+				
 				//
 				//Spin::Input::Controls::host_serial.print_string("read rpm:");Spin::Input::Controls::host_serial.print_float(Spin::Input::Controls::Control.Rpm.Value);Spin::Input::Controls::host_serial.print_string("\r");
 				//Spin::Input::Controls::host_serial.print_string("control rpm:");Spin::Input::Controls::host_serial.print_float(Spin::Input::Controls::Control.Step.Value);Spin::Input::Controls::host_serial.print_string("\r");
@@ -93,19 +91,24 @@ void Spin::Input::Controls::run()
 				//Spin::Input::Controls::host_serial.print_string("actual_last:");Spin::Input::Controls::host_serial.print_float(active_pid_mode->set_last);Spin::Input::Controls::host_serial.print_string("\r");
 				//while(1){}
 			}
-			OCR0A = 200;// active_pid_mode->Max_Val -abs(active_pid_mode->cv_control_variable);
+			//OCR0A = 200;// active_pid_mode->Max_Val -abs(active_pid_mode->cv_control_variable);
 		}
 		if (Spin::Input::Controls::Control.Step.Dirty == 1)
 		{
 			//this is only here for testing. I need a 50khz input to the motor
 			//drive and I am also borrowing that pulse generator as an rpm request
 			//Spin::Input::Controls::Control.Step.Value = Spin::Input::Controls::Control.Step.Value/100;
+			update_pid(Spin::Input::Controls::Control.Step.Value, Spin::Input::Controls::Control.Rpm.Value);
 			
-			//Spin::Input::Controls::host_serial.print_string("requested rpm:");
-			//Spin::Input::Controls::host_serial.print_int32(Spin::Input::Controls::Control.Step.Value);
-			//Spin::Input::Controls::host_serial.print_string("\r");
+			Spin::Input::Controls::host_serial.print_string("requested rpm:");
+			Spin::Input::Controls::host_serial.print_int32(Spin::Input::Controls::Control.Step.Value);
+			Spin::Input::Controls::host_serial.print_string("\r");
 			Spin::Input::Controls::Control.Step.Dirty = 0;
 			Spin::Input::Controls::timer_re_start();
+			
+			Spin::Input::Controls::host_serial.print_string("new pid value:");
+			Spin::Input::Controls::host_serial.print_float(active_pid_mode->Max_Val-abs(active_pid_mode->cv_control_variable));
+			Spin::Input::Controls::host_serial.print_string("\r");
 		}
 		if (Spin::Input::Controls::host_serial.HasEOL())
 		{
@@ -113,7 +116,7 @@ void Spin::Input::Controls::run()
 			active_pid_mode->Kp+=0.01;
 		}
 		
-		//OCR0A = 200;//256-active_pid_mode->cv_control_variable;
+		OCR0A = active_pid_mode->Max_Val -abs(active_pid_mode->cv_control_variable);
 	}
 }
 
@@ -128,10 +131,23 @@ void Spin::Input::Controls::update_vitals()
 	//400/500=0.8
 	//0.8/400 = 0.002
 	//0.002 * 500 = 1
-	if (TCNT1)
+	
+	if (freq_count_ticks>0)
 	{
-		float rps=((enc_ticks_in_period/TCNT1)/encoder_ticks_per_rev)* frq_gate_time_ms;
-		Spin::Input::Controls::Control.Rpm.Value = rps *60;
+		float f_tcnt1 = ((float)enc_ticks_in_period/(float)freq_count_ticks);
+		float rps=(f_tcnt1/encoder_ticks_per_rev)* frq_gate_time_ms;
+		
+		//Spin::Input::Controls::host_serial.print_string("tcnt = ");
+		//Spin::Input::Controls::host_serial.print_float(freq_count_ticks);
+		//Spin::Input::Controls::host_serial.print_string(", ");
+		//
+		////Spin::Input::Controls::host_serial.print_string("f_tcnt = ");
+		//Spin::Input::Controls::host_serial.print_float(f_tcnt1);
+		//Spin::Input::Controls::host_serial.print_string(", ");
+		
+		
+		Spin::Input::Controls::Control.Rpm.Value = rps *60.0;
+		//Spin::Input::Controls::host_serial.print_string("\r");
 	}
 	return;
 	for (int i=0;i<rpm_buffer_size;i++)
@@ -167,16 +183,16 @@ void Spin::Input::Controls::set_pid_defaults()
 	as_position.Max_Val=255;
 	as_position.Min_Val=-255;
 	as_position.invert_output=1;
-	as_position.t_time=.25;
+	as_position.t_time=1;
 	
 	as_velocity.reset();
-	as_velocity.Kp=0.001;
+	as_velocity.Kp=0.08;
 	as_velocity.Ki=0.05;
 	as_velocity.Kd=0.02;
 	as_velocity.Max_Val=240;
 	as_velocity.Min_Val=0;
 	as_velocity.invert_output=1;
-	as_velocity.t_time=.25;
+	as_velocity.t_time=15;
 }
 
 void Spin::Input::Controls::setup_pulse_inputs()
@@ -354,32 +370,32 @@ ISR(TIMER2_COMPA_vect)
 	//then you obviously have a much higher grade machine than I intended to
 	//control!
 
+	Spin::Input::Controls::Control.Step.Value = TCNT1;
 	if (rpm_count_ticks >= rpm_gate_time_ms)
 	{
-		Spin::Input::Controls::Control.Rpm.Value_Buffer[(++rpm_slot) & (rpm_buffer_size-1u)] = enc_ticks_in_period;
-		rpm_count_ticks = 0;
-		//rpm_slot ++;
-		enc_ticks_in_period = 0;
-		Spin::Input::Controls::Control.Rpm.Dirty = 1;//enc_ticks_in_period != 0;
+		//Spin::Input::Controls::Control.Rpm.Value_Buffer[(++rpm_slot) & (rpm_buffer_size-1u)] = enc_ticks_in_period;
+		//rpm_count_ticks = 0;
+		////rpm_slot ++;
+		//enc_ticks_in_period = 0;
+		//Spin::Input::Controls::Control.Rpm.Dirty = 1;//enc_ticks_in_period != 0;
 		pid_interval = 1;
-		//if (rpm_slot>rpm_buffer_size)
-		//rpm_slot = 0;
+		////if (rpm_slot>rpm_buffer_size)
+		////rpm_slot = 0;
 	}
-	
+	//
 	if (freq_count_ticks >= frq_gate_time_ms)
 	{
-		Spin::Input::Controls::Control.Step.Value = TCNT1;
+		
 		TCCR1B = 0;//<--turn off counting on timer 1
 		TCCR2B = 0;//<--turn off timing on timer 2
 		
-		
+		Spin::Input::Controls::Control.Rpm.Dirty = 1;//enc_ticks_in_period != 0;
 		Spin::Input::Controls::Control.Step.Dirty = 1;
 		
 	}
 
 	freq_count_ticks++;
 	rpm_count_ticks++;
-	
 }
 
 ISR(PCINT0_vect)
