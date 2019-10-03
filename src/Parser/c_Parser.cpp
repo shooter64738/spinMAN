@@ -52,6 +52,15 @@ int16_t c_Parser::CheckInput()
 		c_Processor::host_serial.Write("spindle_input.target_rpm:");
 		c_Processor::host_serial.print_float(c_Parser::spindle_input.target_rpm);
 		
+		c_Processor::host_serial.Write("P,I,D");
+		c_Processor::host_serial.print_float(c_PID::spindle_terms.Kp);
+		c_Processor::host_serial.Write(",");
+		c_Processor::host_serial.print_float(c_PID::spindle_terms.Ki);
+		c_Processor::host_serial.Write(",");
+		c_Processor::host_serial.print_float(c_PID::spindle_terms.Kd);
+		c_Processor::host_serial.Write(13);
+		
+		
 		if (return_value != NGC_Interpreter_Errors::OK)
 		return return_value;
 		

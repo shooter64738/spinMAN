@@ -26,17 +26,17 @@ class c_Encoder_RPM
 	
 		
 	static void Encoder_Trigger();
-	static float CurrentAngle_DEC();
-	static float CurrentAngle_RAD();
+	//static float CurrentAngle_DEC();
+	//static float CurrentAngle_RAD();
 	static float CurrentAngle_DEG();
 	static float CurrentRPM();
-	static uint32_t AverageRPM();
-	static void SetAverageRPM();
-	static float CurrentRotation();
+	//static uint32_t AverageRPM();
+	//static void SetAverageRPM();
+	//static float CurrentRotation();
 	static void Initialize(uint16_t encoder_ticks_per_rev);
 	static void Encoder_Update();
 	static int32_t Encoder_Position();
-	static uint16_t encoder_ticks_per_rev;
+	static int16_t encoder_ticks_per_rev;
 		
 
 	//private:

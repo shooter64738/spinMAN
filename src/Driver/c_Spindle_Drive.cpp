@@ -383,7 +383,7 @@ void c_Spindle_Drive::Process_State(float current_rpm)
 			c_Spindle_Drive::current_output = c_PID::Calculate(current_rpm,c_Spindle_Drive::Drive_Control.target_rpm,c_PID::spindle_terms);
 	}
 	
-	OCR0A = c_Spindle_Drive::current_output;
+	OCR0A = 256-c_Spindle_Drive::current_output;
 }
 
 

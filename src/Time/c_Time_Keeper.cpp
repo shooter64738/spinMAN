@@ -44,19 +44,18 @@ uint32_t c_Time_Keeper::millis()
 	return _millis;
 }
 
-ISR(TIMER2_COMPA_vect)
-{
-	
-	//each time_tick is .0001 seconds with prescaler of 8
-	time_ticks++;
-	_millis++;
-	if (time_ticks>=10)
-	{
-		time_ticks -= 10;
-		//c_Encoder_RPM::SetAverageRPM();
-	}
-		
-}
+//ISR(TIMER2_COMPA_vect)
+//{
+	//
+	////each time_tick is .0001 seconds with prescaler of 8
+	//time_ticks++;
+	//_millis++;
+	//if (time_ticks>=250)
+	//{	
+		//time_ticks -= 250;
+	//}
+		//
+//}
 
 //// default constructor
 //c_Time_Keeper::c_Time_Keeper()

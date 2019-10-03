@@ -351,7 +351,7 @@ void c_Serial::print_float(float n, uint8_t decimal_places)
 		} // Insert decimal point in right place.
 		Write(buf[i - 1]);
 	}
-	this->Write(CR);
+	//this->Write(CR);
 }
 
 uint8_t c_Serial::_check_tx_port_data(char ByteBuffer)

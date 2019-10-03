@@ -14,11 +14,14 @@
 #include <avr/interrupt.h>
 #include "Serial\c_Serial.h"
 
+
+
 class c_Processor
 {
 	//variables
 	public:
 	static c_Serial host_serial;
+	
 
 	protected:
 	private:

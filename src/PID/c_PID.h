@@ -11,7 +11,7 @@
 
 #include <stdint.h>
 
-#define MINIMUM_OUTPUT 100
+#define MINIMUM_OUTPUT 0
 #define MAXIMUM_OUTPUT 255
 
 class c_PID

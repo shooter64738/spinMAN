@@ -8,20 +8,14 @@
 #include "..\Driver\c_Spindle_Drive.h"
 #include "..\globals.h"
 #include "..\c_Processor.h"
-uint32_t time_of_last=0;
 uint32_t over_flows=0;
-uint32_t span=0;
-uint32_t avg_span=0;
-uint16_t encoder_count=0;
 uint32_t signal_monitor = 0;
 bool signal_lost=false;
-uint32_t rev_count_x1=0;
-uint32_t rev_count_x1mil=0;
-volatile uint32_t running_tick = 0 ;
 uint32_t time_at_tick[TIME_ARRAY_SIZE] = {0};
 uint8_t time_index = 0;
-//////////////////////////////////////////////////////////////////////////
-int32_t count = 0;
+int16_t count = 0;
+int8_t encoder_direction = 0;
+
 /*
 Conversion factor is to save some math speed
 CONVERSION_FACTOR = 1/(F_CPU/Prescale)
@@ -35,25 +29,28 @@ Instance methods
 */
 
 static const int8_t encoder_table[] = {0,-1,1,0,1,0,0,-1,-1,0,0,1,0,1,-1,0};
+//                                 *              *     *          *
+//static const int8_t encoder_table[] = {0,-1,1,0,-1,0,1,0,1,-1,0,0,0,0,0};
 //////////////////////////////////////////////////////////////////////////
 
 
 float c_Encoder_RPM::encoder_rpm_multiplier = 0;
 float c_Encoder_RPM::encoder_angle_multiplier = 0;
-uint16_t c_Encoder_RPM::encoder_ticks_per_rev = 0;
+int16_t c_Encoder_RPM::encoder_ticks_per_rev = 0;
 
 void c_Encoder_RPM::Initialize(uint16_t encoder_ticks_per_rev)
 {
 	
 	//Following code enables interrupts to determine direction of motor rotation
 	////////////////////////////////////////////////////////////////////////////
-	////DDRD &= ~(1 << DDD2);	//input mode
-	////PORTD |= (1 << PORTD2);	//enable pullup
-	////DDRD &= ~(1 << DDD3);	//input mode
-	////PORTD |= (1 << PORTD3);	//enable pullup
+	DDRD &= ~(1 << DDD2);	//input mode
+	PORTD |= (1 << PORTD2);	//enable pullup
+	DDRD &= ~(1 << DDD3);	//input mode
+	PORTD |= (1 << PORTD3);	//enable pullup
 	////
-	////EICRA |= (1 << ISC00);	// Trigger on any change on INT0
-	////EICRA |= (1 << ISC10);	// Trigger on any change on INT1
+	//Any change triggers
+	EICRA |= (1 << ISC00);	// Trigger on any change on INT0
+	EICRA |= (1 << ISC10);	// Trigger on any change on INT1
 	
 	//EICRA |= (1 << ISC00) | (1 << ISC01);	// Trigger on rising change on INT0
 	//EICRA |= (1 << ISC10) | (1 << ISC11);	// Trigger on rising change on INT1
@@ -64,7 +61,7 @@ void c_Encoder_RPM::Initialize(uint16_t encoder_ticks_per_rev)
 	//EICRA |= (1 << ISC01);	// Trigger on hi change on INT0
 	//EICRA |= (1 << ISC11);	// Trigger on hi change on INT1
 	
-	////EIMSK |= (1 << INT0) | (1 << INT1);     // Enable external interrupt INT0, INT1
+	EIMSK |= (1 << INT0) | (1 << INT1);     // Enable external interrupt INT0, INT1
 	////////////////////////////////////////////////////////////////////////////
 	
 	/*
@@ -80,7 +77,7 @@ void c_Encoder_RPM::Initialize(uint16_t encoder_ticks_per_rev)
 	//Currently running NO prescaler gives best resolution. prescale 8 is suitable as well though
 	//prescale 1 (none)
 	//TCCR1B |= (1 << CS10); // | (1 << CS12);
-	//prescale 8 
+	//prescale 8
 	TCCR1B |= (1 << CS11);
 	//prescale 64
 	//TCCR1B |= (1 << CS10) | (1 << CS11);
@@ -123,24 +120,16 @@ float c_Encoder_RPM::CurrentRPM()
 
 float c_Encoder_RPM::CurrentAngle_DEG()
 {
-	float this_count = encoder_count; //<--Copy from volatile as a float
+	float this_count = count; //<--Copy from volatile as a float
 	return c_Encoder_RPM::encoder_angle_multiplier * this_count;
 }
 
-float c_Encoder_RPM::CurrentAngle_RAD()
-{
-	return c_Encoder_RPM::CurrentAngle_DEG()* M_PI/180;
-}
+//float c_Encoder_RPM::CurrentAngle_RAD()
+//{
+	//return c_Encoder_RPM::CurrentAngle_DEG()* M_PI/180;
+//}
 
-float c_Encoder_RPM::CurrentRotation()
-{
-	uint32_t million_revs = rev_count_x1mil*1000000; //<-- copy from volatile to uint32
-	uint32_t one_revs = rev_count_x1;//<-- copy from volatile to uint32
-	float mantissa_revs = (encoder_count/encoder_ticks_per_rev);//<-- copy from volatile to float
-	
-	float this_rotation = million_revs + one_revs + mantissa_revs;
-	return this_rotation;
-}
+
 
 ISR(TIMER1_OVF_vect)
 {
@@ -152,21 +141,16 @@ ISR(TIMER1_OVF_vect)
 
 void c_Encoder_RPM::Encoder_Trigger()
 {
+	uint16_t this_tick = ICR1;
 	signal_lost = false;
 	signal_monitor=0;
-	uint16_t this_tick = ICR1;
+	
 	//calculate total tick count by factoring in over flows
-	running_tick  =  (over_flows*65536) + this_tick;
+	time_at_tick[time_index++]  =  (over_flows*65536) + this_tick;
 	over_flows = 0;
 	TCNT1 = 0;
-	time_at_tick[time_index++] = running_tick;
 	if (time_index == TIME_ARRAY_SIZE)
 	time_index = 0;
-	encoder_count++;
-	if (encoder_count>= c_Encoder_RPM::encoder_ticks_per_rev)
-	{
-		encoder_count-=c_Encoder_RPM::encoder_ticks_per_rev;
-	}
 }
 ISR(TIMER1_CAPT_vect)
 {
@@ -192,36 +176,40 @@ int32_t c_Encoder_RPM::Encoder_Position()
 // see tutorial/gif for description about how this function works
 void c_Encoder_RPM::Encoder_Update()
 {
-	
-	//get the current timer value for this ISR jump
 	uint16_t this_tick = TCNT1;
-	//calculate total tick count by factoring in over flows
-	uint32_t current  =  (over_flows*65536) + this_tick;
-	//calculate a time span between the new total tick count, and the old total tick count
-	span = current - time_of_last;
-	//set time_of_last to be the current tick count
-	time_of_last = current;
-	//reset this counter when we get a pulse. we assume signal not lost at this point
-	signal_monitor = 0;
 	signal_lost = false;
+	signal_monitor=0;
+	
+	//calculate total tick count by factoring in over flows
+	time_at_tick[time_index++]  =  (over_flows*65536) + this_tick;
+	over_flows = 0;
+	TCNT1 = 0;
+	if (time_index == TIME_ARRAY_SIZE)
+	time_index = 0;
+	
 	
 	//////////////////////////////////////////////////////////////////////////
-	
 	static uint8_t enc_val = 0; // static allows this value to persist across function calls
-
 	enc_val = enc_val << 2; // shift the previous state to the left
 	enc_val = enc_val | ((PIND & 0b1100) >> 2); // or the current state into the 2 rightmost bits
-
-	count += encoder_table[enc_val & 0b1111];    // preform the table lookup and increment count accordingly
-	running_tick++;
+	encoder_direction = encoder_table[enc_val & 0b1111];    // preform the table lookup and increment count accordingly
+	count += encoder_direction;
+	
+	if (count<= 0)
+	count = c_Encoder_RPM::encoder_ticks_per_rev;
+	else if (count >=c_Encoder_RPM::encoder_ticks_per_rev)
+	count = 0;
+	//////////////////////////////////////////////////////////////////////////
 }
-//////////////////////////////////////////////////////////////////////////
+
 ISR (INT0_vect)
 {
+	//UDR0='a';
 	//c_Encoder_RPM::Encoder_Trigger();
 	c_Encoder_RPM::Encoder_Update();
 }
 ISR(INT1_vect)
 {
+	//UDR0='b';
 	c_Encoder_RPM::Encoder_Update();
 }

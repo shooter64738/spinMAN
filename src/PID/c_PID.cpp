@@ -15,15 +15,15 @@ c_PID::s_pid_terms c_PID::spindle_terms;
 
 void c_PID::Initialize()
 {
-	c_PID::servo_terms.Kp=0.009;
-	c_PID::servo_terms.Ki=0.00001;
-	c_PID::servo_terms.Kd=-0.0;
+	c_PID::servo_terms.Kp=0.0015;
+	c_PID::servo_terms.Ki=0.0001;
+	c_PID::servo_terms.Kd=-0.01;
 	c_PID::servo_terms.KITerm=0;
 	c_PID::servo_terms.lastInput = 0;
 	c_PID::servo_terms.NewOutPut = 0;
 	c_PID::servo_terms.Err=0;
 	c_PID::servo_terms.Max_Val=255;
-	c_PID::servo_terms.Min_Val=100;
+	c_PID::servo_terms.Min_Val=-255;
 	
 	//c_PID::spindle_terms.Kp=0.05;
 	//c_PID::spindle_terms.Ki=0.0011;

@@ -4,7 +4,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectVersion>7.0</ProjectVersion>
     <ToolchainName>com.Atmel.AVRGCC8.CPP</ToolchainName>
-    <ProjectGuid>{0ff8ce98-64c7-41ae-8c3e-1b504c1824f3}</ProjectGuid>
+    <ProjectGuid>{dce6c7e3-ee26-4d79-826b-08594b9ad897}</ProjectGuid>
     <avrdevice>ATmega328P</avrdevice>
     <avrdeviceseries>none</avrdeviceseries>
     <OutputType>Executable</OutputType>
@@ -20,10 +20,10 @@
     <OverrideVtor>false</OverrideVtor>
     <CacheFlash>true</CacheFlash>
     <ProgFlashFromRam>true</ProgFlashFromRam>
-    <RamSnippetAddress />
+    <RamSnippetAddress>0x20000000</RamSnippetAddress>
     <UncachedRange />
     <preserveEEPROM>true</preserveEEPROM>
-    <OverrideVtorValue />
+    <OverrideVtorValue>exception_table</OverrideVtorValue>
     <BootSegment>2</BootSegment>
     <ResetRule>0</ResetRule>
     <eraseonlaunchrule>0</eraseonlaunchrule>
@@ -143,6 +143,7 @@
         <avrgcccpp.compiler.optimization.AllocateBytesNeededForEnum>True</avrgcccpp.compiler.optimization.AllocateBytesNeededForEnum>
         <avrgcccpp.compiler.optimization.DebugLevel>Default (-g2)</avrgcccpp.compiler.optimization.DebugLevel>
         <avrgcccpp.compiler.warnings.AllWarnings>True</avrgcccpp.compiler.warnings.AllWarnings>
+        <avrgcccpp.compiler.miscellaneous.OtherFlags>-std=c++11</avrgcccpp.compiler.miscellaneous.OtherFlags>
         <avrgcccpp.linker.libraries.Libraries>
           <ListValues>
             <Value>libm</Value>
@@ -169,16 +170,16 @@
     <Compile Include="c_Processor.h">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="c_spin.cpp">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="c_spin.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="Driver\c_Spindle_Drive.cpp">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="Driver\c_Spindle_Drive.h">
-      <SubType>compile</SubType>
-    </Compile>
-    <Compile Include="FeedBack\c_Encoder_RPM.cpp">
-      <SubType>compile</SubType>
-    </Compile>
-    <Compile Include="FeedBack\c_Encoder_RPM.h">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="globals.h">
@@ -228,6 +229,7 @@
     <Folder Include="FeedBack" />
     <Folder Include="Driver" />
     <Folder Include="PID" />
+    <Folder Include="Spindle\" />
     <Folder Include="Time" />
     <Folder Include="NGC_RS274\" />
     <Folder Include="Parser" />
