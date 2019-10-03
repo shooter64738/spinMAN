@@ -9,15 +9,14 @@
 //#include "PID/c_PID.h"
 //#include "Parser/c_Parser.h"
 //#include "c_Processor.h"
-#include "c_spin.h"
-#include "c_spin_encoder.h"
+#include "c_controller.h"
 #define FACTOR 1/F_CPU
 
 
 int main(void)
 {
 		//c_Processor::Start();
-		Spin::Input::Controls::initialize();
-		Spin::Input::Controls::run();
+		Spin::Controller::initialize();
+		Spin::Controller::run();
 		
 }
