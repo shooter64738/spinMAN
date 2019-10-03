@@ -125,12 +125,15 @@ float Spin::Input::Controls::update_pid(uint32_t target, uint32_t current)
 
 void Spin::Input::Controls::update_vitals()
 {
-//400/500=0.8
-//0.8/400 = 0.002
-//0.002 * 500 = 1
-float rps=((enc_ticks_in_period/TCNT1)/encoder_ticks_per_rev)* frq_gate_time_ms;
-Spin::Input::Controls::Control.Rpm.Value = rps *60;
-return;
+	//400/500=0.8
+	//0.8/400 = 0.002
+	//0.002 * 500 = 1
+	if (TCNT1)
+	{
+		float rps=((enc_ticks_in_period/TCNT1)/encoder_ticks_per_rev)* frq_gate_time_ms;
+		Spin::Input::Controls::Control.Rpm.Value = rps *60;
+	}
+	return;
 	for (int i=0;i<rpm_buffer_size;i++)
 	{
 		//Spin::Input::Controls::host_serial.print_int32(Spin::Input::Controls::Control.Rpm.Value_Buffer[i]);
