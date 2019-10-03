@@ -37,6 +37,7 @@ void Spin::Input::Controls::run()
 	
 	while(1)
 	{
+		Spin::Input::Controls::update_vitals();
 		if (Spin::Input::Controls::Control.Enable.Dirty == 1)
 		{
 			Spin::Input::Controls::host_serial.print_string("en dirty\r");
@@ -46,7 +47,7 @@ void Spin::Input::Controls::run()
 		{
 			//Spin::Input::Controls::host_serial.print_string("rpm dirty\r");
 			Spin::Input::Controls::Control.Rpm.Dirty = 0;
-			Spin::Input::Controls::update_vitals();
+			//Spin::Input::Controls::update_vitals();
 			Spin::Input::Controls::host_serial.print_string("reported rpm: ");
 			Spin::Input::Controls::host_serial.print_float(Spin::Input::Controls::Control.Rpm.Value);
 			Spin::Input::Controls::host_serial.print_string("\r");
@@ -123,6 +124,12 @@ float Spin::Input::Controls::update_pid(uint32_t target, uint32_t current)
 
 void Spin::Input::Controls::update_vitals()
 {
+//400/500=0.8
+//0.8/400 = 0.002
+//0.002 * 500 = 1
+float rps=((enc_ticks_in_period/TCNT1)/encoder_ticks_per_rev)* frq_gate_time_ms;
+Spin::Input::Controls::Control.Rpm.Value = rps *60;
+return;
 	for (int i=0;i<rpm_buffer_size;i++)
 	{
 		//Spin::Input::Controls::host_serial.print_int32(Spin::Input::Controls::Control.Rpm.Value_Buffer[i]);
