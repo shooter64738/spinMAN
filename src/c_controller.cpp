@@ -110,7 +110,7 @@ void Spin::Controller::run()
 			//Spin::Input::Controls::Control.Step.Value = Spin::Input::Controls::Control.Step.Value/100;
 			Spin::Control::Output::update_pid(Spin::Control::Input::Actions.Step.Value, Spin::Control::Input::Actions.Rpm.Value);
 			
-			Spin::Controller::host_serial.print_string("requested rpm:");
+			Spin::Controller::host_serial.print_string("requested rpm:"); 
 			Spin::Controller::host_serial.print_int32(Spin::Control::Input::Actions.Step.Value);
 			Spin::Controller::host_serial.print_string("\r");
 			Spin::Control::Input::Actions.Step.Dirty = 0;
