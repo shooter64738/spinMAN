@@ -38,6 +38,7 @@ void Spin::Input::Controls::run()
 	while(1)
 	{
 		Spin::Input::Controls::update_vitals();
+
 		if (Spin::Input::Controls::Control.Enable.Dirty == 1)
 		{
 			Spin::Input::Controls::host_serial.print_string("en dirty\r");
