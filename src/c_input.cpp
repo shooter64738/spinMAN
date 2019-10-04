@@ -7,45 +7,61 @@
 
 
 #include "c_input.h"
-#include "c_controller.h"
 
-Spin::Input::s_flags Spin::Input::Actions;
-
+Spin::Input::s_flags Spin::Input::Controls;
 
 volatile uint8_t control_old_states = 255;
 volatile uint8_t step_old_states = 255;
 
 volatile uint32_t freq_count_ticks = 0;
 volatile uint32_t enc_count = 0;
-volatile uint16_t enc_ticks_in_period = 0;
+volatile uint16_t enc_ticks_at_current_time = 0;
 volatile uint16_t pid_count_ticks = 0;
+volatile uint16_t freq_interval = 0;
+volatile uint16_t _ref_timer_count = 0;
 
 
 static const int8_t encoder_table[] = {0,-1,1,0,1,0,0,-1,-1,0,0,1,0,1,-1,0};
 static uint8_t enc_val = 0;
 //static uint8_t rpm_slot = 0;
 
+void Spin::Input::check_input_states()
+{
 
+	//mode is read from 2 pins
+	Spin::Input::Controls.in_mode = (Spin::Controller::e_drive_modes)((CONTROL_PORT_PIN_ADDRESS & (1 << MODE_PIN_A)) | (CONTROL_PORT_PIN_ADDRESS & (1 << MODE_PIN_B)));
+	Spin::Input::Controls.enable = (Spin::Controller::e_drive_states)(CONTROL_PORT_PIN_ADDRESS & (1 << ENABLE_PIN));
+	Spin::Input::Controls.direction = (Spin::Controller::e_directions)(CONTROL_PORT_PIN_ADDRESS & (1 << DIRECTION_PIN));
+}
 
 void Spin::Input::update_rpm()
 {
 	if (freq_count_ticks>0)
 	{
-		float timer_count = TCNT1;
+		float timer_ticks_at_current_time = _ref_timer_count;
 		//find factor of encoder tick over time.
-		float f_tcnt1_encoder = ((float)enc_ticks_in_period/(float)freq_count_ticks);
+		float f_tcnt1_encoder = ((float)enc_ticks_at_current_time/(float)freq_count_ticks);
 		//find factor of frequency tick over time.
-		float f_tcnt1_req_speed = ((float)timer_count/(float)freq_count_ticks)*frq_gate_time_ms;
+		float f_tcnt1_req_speed = ((float)timer_ticks_at_current_time/(float)freq_count_ticks)*FRQ_GATE_TIME_MS;
 		//calculate number of encoder ticks this would equate to, and calculate
 		//how many revolutions that would be in 1 second
-		float rps=(f_tcnt1_encoder/encoder_ticks_per_rev)* frq_gate_time_ms;
+		float rps=(f_tcnt1_encoder/ENCODER_TICKS_PER_REV)* FRQ_GATE_TIME_MS;
 		//float sig=(f_tcnt1_req_speed/fre)* frq_gate_time_ms;
 		//multiiply rps *60 to get rpm.
-		Spin::Input::Actions.Rpm.Value = rps *60.0;
-		Spin::Input::Actions.Step.Value = f_tcnt1_req_speed;
+		Spin::Input::Controls.sensed_rpm = rps *60.0;
+		Spin::Input::Controls.step_counter = f_tcnt1_req_speed;
 		//Spin::Input::Controls::host_serial.print_string("\r");
 	}
 	return;
+}
+
+void Spin::Input::update_time_keeping()
+{
+	if (pid_count_ticks >= RPM_GATE_TIME_MS)
+	{
+		Spin::Controller::pid_interval = 1;
+		pid_count_ticks = 0;
+	}
 }
 
 void Spin::Input::initialize()
@@ -59,7 +75,7 @@ void Spin::Input::initialize()
 
 void Spin::Input::setup_pulse_inputs()
 {
-	Spin::Input::Actions.Step.Dirty = 0;        // reset
+	freq_interval = 0;
 
 	//Pin D5 (PIND5) is connected to timer1 count. We use that as a hardware counter
 	//set pin to input
@@ -73,7 +89,7 @@ void Spin::Input::setup_pulse_inputs()
 void Spin::Input::timer_re_start()
 {
 	freq_count_ticks = 0;//	<--reset this to 0, but count this as a tick
-	enc_ticks_in_period = 0;
+	enc_ticks_at_current_time = 0;
 	pid_count_ticks = 0;
 	//rpm_slot = 0;
 	
@@ -106,7 +122,9 @@ void Spin::Input::setup_control_inputs()
 	//Set pins on port for inputs
 	CONTROl_PORT_DIRECTION &= ~((1 << DDB0) | (1 << DDB1) | (1 << DDB2));
 	//Enable pull ups
-	CONTROl_PORT |= (1<<Direction_Pin)|(1<<Mode_Pin)|(1<<Enable_Pin);
+	CONTROl_PORT |= (1<<DIRECTION_PIN)|(1<<MODE_PIN_A)|(1<<ENABLE_PIN);
+	
+	/*I am removing the tracking of these controls pins from an interrupt
 	//Set the mask to check pins PB0-PB5
 	PCMSK0 = (1<<PCINT0)|(1<<PCINT1)|(1<<PCINT2);
 	//Set the interrupt for PORTB (PCIE0)
@@ -114,11 +132,11 @@ void Spin::Input::setup_control_inputs()
 	PCIFR |= (1<<PCIF0);
 	//Moved step PCINT to its own ISR because it will probably get hit the most frequently
 	//and cause the biggest performance hit.
-	
+	*/
 	//set pin to input
-	STEP_PORT_DIRECTION &= ~((1 << DDD5));
+	//STEP_PORT_DIRECTION &= ~((1 << DDD5));
 	//enable pullup
-	STEP_PORT |= (1<<Step_Pin_on_Timer);
+	//STEP_PORT |= (1<<STEP_PIN_ON_TIMER);
 	
 	////set pin to input
 	//STEP_PORT_DIRECTION &= ~((1 << DDD7));
@@ -158,24 +176,20 @@ void Spin::Input::setup_encoder_capture()
 
 void Spin::Input::encoder_update()
 {
-	
-	//////////////////////////////////////////////////////////////////////////
-	// static allows this value to persist across function calls
 	enc_val = enc_val << 2; // shift the previous state to the left
 	enc_val = enc_val | ((PIND & 0b1100) >> 2); // or the current state into the 2 rightmost bits
 	int8_t encoder_direction = encoder_table[enc_val & 0b1111];    // preform the table lookup and increment count accordingly
 	enc_count += encoder_direction;
 	
 	if (enc_count<= 0)
-	enc_count = encoder_ticks_per_rev;
-	else if (enc_count >=encoder_ticks_per_rev)
+	enc_count = ENCODER_TICKS_PER_REV;
+	else if (enc_count >=ENCODER_TICKS_PER_REV)
 	enc_count = 0;
-	//////////////////////////////////////////////////////////////////////////
-	Spin::Input::Actions.Encoder.Value = enc_count;
-	Spin::Input::Actions.Encoder.Dirty = 1;
+
+	Spin::Input::Controls.encoder_count = enc_count;
 	
 	//So long as the timer remains enabled we can track rpm.
-	enc_ticks_in_period++;
+	enc_ticks_at_current_time++;
 	
 	
 }
@@ -184,62 +198,26 @@ void Spin::Input::encoder_update()
 ISR(TIMER2_COMPA_vect)
 {
 	//Ive stripped this ISR down to the bare minimum. It seems to run fast enough to read a 2mhz signal reliably.
+	_ref_timer_count = TCNT1;
 	
-	if (pid_count_ticks >= rpm_gate_time_ms)
+	if (freq_count_ticks >= FRQ_GATE_TIME_MS)
 	{
-		Spin::Controller::pid_interval = 1;
-		pid_count_ticks = 0;
-	}
-	if (freq_count_ticks >= frq_gate_time_ms)
-	{
+		//Leave timers enabled, just reset the counters for them
 		//Spin::Control::Input::Actions.Step.Value = TCNT1;
-		TCCR1B = 0;//<--turn off counting on timer 1
-		TCCR2B = 0;//<--turn off timing on timer 2
+		//TCCR1B = 0;//<--turn off counting on timer 1
+		//TCCR2B = 0;//<--turn off timing on timer 2
 		
-		Spin::Input::Actions.Rpm.Dirty = 1;//enc_ticks_in_period != 0;
-		Spin::Input::Actions.Step.Dirty = 1;
+		TCNT1 = 0;//<-- clear the counter for freq read (desired rpm)
+		TCNT2 = 0;//<-- clear the counter for time keeping
+		freq_count_ticks = 0;//	<--reset this to 0, but we will count this as a tick
+		enc_ticks_at_current_time = 0;
+		
 		
 	}
 
 	freq_count_ticks++;
 	pid_count_ticks++;
 }
-
-ISR(PCINT0_vect)
-{
-	uint8_t updates = CONTROL_PORT_PIN_ADDRESS ^ control_old_states;
-	control_old_states = CONTROL_PORT_PIN_ADDRESS;
-	
-	if (updates & (1 << Enable_Pin))
-	{
-		Spin::Input::Actions.Enable.Value = (control_old_states & (1 << Enable_Pin));
-		Spin::Input::Actions.Enable.Dirty = 1;//(bool) (updates & (1 << Enable_Pin));;
-	}
-	
-	if (updates & (1 << Direction_Pin))
-	{
-		Spin::Input::Actions.Direction.Value = (bool) (updates & (1 << Direction_Pin));
-		Spin::Input::Actions.Direction.Dirty = 1;//(bool) updates & (1 << Direction_Pin);
-	}
-	
-	if (updates & (1 << Mode_Pin))
-	{
-		Spin::Input::Actions.Mode.Value = (bool) (updates & (1 << Mode_Pin));
-		Spin::Input::Actions.Mode.Dirty = 1;//(bool) updates & (1 << Mode_Pin);
-	}
-	
-};
-
-ISR(PCINT2_vect)
-{
-	uint8_t updates = STEP_PORT_PIN_ADDRESS ^ step_old_states;
-	
-	Spin::Input::Actions.Step.Value = (STEP_PORT_PIN_ADDRESS & (1 << Step_Pin));
-	Spin::Input::Actions.Step.Dirty = 1;// updates & (1 << Step_Pin);
-	
-	step_old_states = STEP_PORT_PIN_ADDRESS;
-	
-};
 
 ISR (INT0_vect)
 {

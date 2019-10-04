@@ -13,6 +13,7 @@
 #include <avr/interrupt.h>
 #include "Serial\c_Serial.h"
 #include <stdint.h>
+#include "c_controller.h"
 
 #define MAX_INT INT16_MAX
 #define MAX_LONG INT32_MAX
@@ -38,6 +39,7 @@ namespace Spin
 			int16_t max;
 			int16_t min;
 			int32_t output;
+			uint8_t invert_output;
 			void reset()
 			{
 				
@@ -64,7 +66,7 @@ namespace Spin
 				// desired setpoint.
 
 				output = proportional + (fki*integral) + (fkp*derivative);
-				
+				output = (invert_output?max-output:output);
 				//if (output<max) output = max;
 				//else if (output<min) output = min;
 				// remember the error for the next time around.
@@ -73,22 +75,24 @@ namespace Spin
 				if (preError>INT16_MAX) preError = INT16_MAX;
 				else if (preError<INT16_MIN) preError = INT16_MIN;
 				
-				return max-output;
+				return output;
 			}
 		};
 		static s_pid_terms as_position;
 		static s_pid_terms as_velocity;
+		static s_pid_terms as_torque;
 		static s_pid_terms * active_pid_mode;
+		static Spin::Controller::e_drive_modes out_mode;
 		protected:
 		private:
 
 		public:
 		static void initialize();
-		static float update_pid(uint32_t target, uint32_t current);
+		static void set_output();
 		static void set_pid_defaults();
-		static void set_drive_state(uint8_t state);
+		static void set_drive_state(Spin::Controller::e_drive_states state);
 		static void setup_pwm_timer();
-		static void set_mode(uint8_t mode);
+		static void set_mode(Spin::Controller::e_drive_modes out_mode);
 	};
 };
 #endif //__C_OUTPUT_H__
