@@ -9,41 +9,41 @@
 #include "c_output.h"
 #include "c_controller.h"
 
-Spin::Control::Output::s_pid_terms Spin::Control::Output::as_position;
-Spin::Control::Output::s_pid_terms Spin::Control::Output::as_velocity;
-Spin::Control::Output::s_pid_terms * Spin::Control::Output::active_pid_mode;
+Spin::Output::s_pid_terms Spin::Output::as_position;
+Spin::Output::s_pid_terms Spin::Output::as_velocity;
+Spin::Output::s_pid_terms * Spin::Output::active_pid_mode;
 
 
-void Spin::Control::Output::initialize()
+void Spin::Output::initialize()
 {
-	Spin::Control::Output::set_pid_defaults();//<-- prep pid values for servo and velocity mode
-	Spin::Control::Output::setup_pwm_timer();//<--prep the pwm output timer
-	Spin::Control::Output::set_drive_state(0);//<--set the drive to disabled
+	Spin::Output::set_pid_defaults();//<-- prep pid values for servo and velocity mode
+	Spin::Output::setup_pwm_timer();//<--prep the pwm output timer
+	Spin::Output::set_drive_state(0);//<--set the drive to disabled
 
 	Spin::Controller::host_serial.print_string("output initialized\r");
 	
 	
 }
 
-void Spin::Control::Output::set_pid_defaults()
+void Spin::Output::set_pid_defaults()
 {
-	Spin::Control::Output::as_position.reset();
-	Spin::Control::Output::as_position.kP = 1;
-	Spin::Control::Output::as_position.kI = 0;
-	Spin::Control::Output::as_position.kD = 0;
-	Spin::Control::Output::as_position.max = 255;
-	Spin::Control::Output::as_position.min = 0;
+	Spin::Output::as_position.reset();
+	Spin::Output::as_position.kP = 1;
+	Spin::Output::as_position.kI = 0;
+	Spin::Output::as_position.kD = 0;
+	Spin::Output::as_position.max = 255;
+	Spin::Output::as_position.min = 0;
 	
-	Spin::Control::Output::as_velocity.reset();
-	Spin::Control::Output::as_velocity.kP = 1;
-	Spin::Control::Output::as_velocity.kI = 1;
-	Spin::Control::Output::as_velocity.kD = 1;
-	Spin::Control::Output::as_velocity.max = 255;
-	Spin::Control::Output::as_velocity.min = 1;
+	Spin::Output::as_velocity.reset();
+	Spin::Output::as_velocity.kP = 1;
+	Spin::Output::as_velocity.kI = 1;
+	Spin::Output::as_velocity.kD = 1;
+	Spin::Output::as_velocity.max = 255;
+	Spin::Output::as_velocity.min = 1;
 	
 }
 
-void Spin::Control::Output::set_drive_state(uint8_t state)
+void Spin::Output::set_drive_state(uint8_t state)
 {
 	if (state)
 	{
@@ -59,13 +59,13 @@ void Spin::Control::Output::set_drive_state(uint8_t state)
 	}
 }
 
-float Spin::Control::Output::update_pid(uint32_t target, uint32_t current)
+float Spin::Output::update_pid(uint32_t target, uint32_t current)
 {
-	Spin::Control::Output::active_pid_mode->get_pid(target,current);
+	Spin::Output::active_pid_mode->get_pid(target,current);
 
 }
 
-void Spin::Control::Output::setup_pwm_timer()
+void Spin::Output::setup_pwm_timer()
 {
 	OCR0A = 255;
 	TCCR0A |= (1 << COM0A1);
@@ -74,10 +74,10 @@ void Spin::Control::Output::setup_pwm_timer()
 	return;
 }
 
-void Spin::Control::Output::set_mode(uint8_t mode)
+void Spin::Output::set_mode(uint8_t mode)
 {
 	if (mode == 1)
-	Spin::Control::Output::active_pid_mode = &Spin::Control::Output::as_position;//<--position mode (servo)
+	Spin::Output::active_pid_mode = &Spin::Output::as_position;//<--position mode (servo)
 	else
-	Spin::Control::Output::active_pid_mode = &Spin::Control::Output::as_velocity;//<--velocity mode (spindle)
+	Spin::Output::active_pid_mode = &Spin::Output::as_velocity;//<--velocity mode (spindle)
 }

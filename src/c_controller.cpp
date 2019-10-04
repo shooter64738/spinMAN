@@ -24,8 +24,8 @@ void Spin::Controller::initialize()
 	//enable interrupts
 	sei();
 
-	Spin::Control::Input::initialize();
-	Spin::Control::Output::initialize();
+	Spin::Input::initialize();
+	Spin::Output::initialize();
 
 }
 
@@ -33,54 +33,46 @@ void Spin::Controller::run()
 {
 	
 	
-	Spin::Control::Input::Actions.Enable.Value = 1;
-	Spin::Control::Input::Actions.Enable.Dirty = 1;
+	Spin::Input::Actions.Enable.Value = 1;
+	Spin::Input::Actions.Enable.Dirty = 1;
 	
-	Spin::Control::Input::Actions.Mode.Value = VELOCITY_MODE;
-	Spin::Control::Input::Actions.Mode.Dirty = 1;
-	//Spin::Control::Output::active_pid_mode = & Spin::Control::Output::as_velocity;
+	Spin::Input::Actions.Mode.Value = VELOCITY_MODE;
+	Spin::Input::Actions.Mode.Dirty = 1;
+	
 	static int32_t new_pid = 255;
 	
 	while(1)
 	{
-		Spin::Control::Input::update_rpm();//<--update rpm as often as we can
+		Spin::Input::update_rpm();//<--update rpm as often as we can
 
-		if (Spin::Control::Input::Actions.Enable.Dirty == 1) //<--has enable changed?
+		if (Spin::Input::Actions.Enable.Dirty == 1) //<--has enable changed?
 		{
-			Spin::Control::Output::set_drive_state(Spin::Control::Input::Actions.Enable.Value);
+			Spin::Output::set_drive_state(Spin::Input::Actions.Enable.Value);
 			Spin::Controller::host_serial.print_string("en dirty\r");
 			Spin::Controller::host_serial.print_string("DRV ");
-			Spin::Controller::host_serial.print_string(Spin::Control::Input::Actions.Enable.Value?"ENABLE\r":"DISABLE\r");
-			Spin::Control::Input::Actions.Enable.Dirty = 0;
-			Spin::Control::Output::set_pid_defaults();
+			Spin::Controller::host_serial.print_string(Spin::Input::Actions.Enable.Value?"ENABLE\r":"DISABLE\r");
+			Spin::Input::Actions.Enable.Dirty = 0;
+			Spin::Output::set_pid_defaults();
 		}
-		if (Spin::Control::Input::Actions.Rpm.Dirty == 1)  //<--has rpm changed?
+		if (Spin::Input::Actions.Rpm.Dirty == 1)  //<--has rpm changed?
 		{
-			//Spin::Input::Controls::host_serial.print_string("rpm dirty\r");
-			Spin::Control::Input::Actions.Rpm.Dirty = 0;
-			//Spin::Input::Controls::update_vitals();
-			//Spin::Controller::host_serial.print_string("reported rpm: ");
-			//Spin::Controller::host_serial.print_float(Spin::Control::Input::Actions.Rpm.Value);
-			//Spin::Controller::host_serial.print_string("\r");
-			//count in 1 second/400*60 = rpm
-			//time/1000 *400*60
-			//
+			Spin::Input::Actions.Rpm.Dirty = 0;
 		}
-		if (Spin::Control::Input::Actions.Direction.Dirty == 1) //<--has direction changed?
+		if (Spin::Input::Actions.Direction.Dirty == 1) //<--has direction changed?
 		{
 			Spin::Controller::host_serial.print_string("dr dirty\r");
-			Spin::Control::Input::Actions.Direction.Dirty = 0;
+			Spin::Input::Actions.Direction.Dirty = 0;
 		}
 
-		if (Spin::Control::Input::Actions.Mode.Dirty == 1)  //<--has mode changed?
+		if (Spin::Input::Actions.Mode.Dirty == 1)  //<--has mode changed?
 		{
-			Spin::Control::Output::set_mode(Spin::Control::Input::Actions.Mode.Value);
+			Spin::Output::set_mode(Spin::Input::Actions.Mode.Value);
 
 			Spin::Controller::host_serial.print_string("md dirty\r");
-			Spin::Control::Input::Actions.Mode.Dirty = 0;
+			Spin::Input::Actions.Mode.Dirty = 0;
 		}
 		
-		if (Spin::Control::Input::Actions.Enable.Value)
+		if (Spin::Input::Actions.Enable.Value)
 		{
 			if (Spin::Controller::pid_interval) //<--is it time to calcualte PID again?
 			{
@@ -88,36 +80,20 @@ void Spin::Controller::run()
 				//update_pid(Spin::Input::Controls::Control.Step.Value, Spin::Input::Controls::Control.Rpm.Value);
 				
 				{
-					new_pid = Spin::Control::Output::active_pid_mode->get_pid
-					(Spin::Control::Input::Actions.Step.Value,Spin::Control::Input::Actions.Rpm.Value)+1;		
+					new_pid = Spin::Output::active_pid_mode->get_pid
+					(Spin::Input::Actions.Step.Value,Spin::Input::Actions.Rpm.Value)+1;		
 					//(500,100);
 					Spin::Controller::host_serial.print_string("pid:");
 					Spin::Controller::host_serial.print_int32(new_pid);
 					Spin::Controller::host_serial.print_string(" rpm:");
-					Spin::Controller::host_serial.print_int32(Spin::Control::Input::Actions.Rpm.Value);
+					Spin::Controller::host_serial.print_int32(Spin::Input::Actions.Rpm.Value);
 					Spin::Controller::host_serial.print_string(" set:");
-					Spin::Controller::host_serial.print_int32(Spin::Control::Input::Actions.Step.Value);
+					Spin::Controller::host_serial.print_int32(Spin::Input::Actions.Step.Value);
 					Spin::Controller::host_serial.print_string("\r");
-					//
-					//Spin::Input::Controls::host_serial.print_string("read rpm:");Spin::Input::Controls::host_serial.print_float(Spin::Input::Controls::Control.Rpm.Value);Spin::Input::Controls::host_serial.print_string("\r");
-					//Spin::Input::Controls::host_serial.print_string("control rpm:");Spin::Input::Controls::host_serial.print_float(Spin::Input::Controls::Control.Step.Value);Spin::Input::Controls::host_serial.print_string("\r");
-					//Spin::Input::Controls::host_serial.print_string("Kp:");Spin::Input::Controls::host_serial.print_float(active_pid_mode->Kp);Spin::Input::Controls::host_serial.print_string("\r");
-					//Spin::Input::Controls::host_serial.print_string("Ki:");Spin::Input::Controls::host_serial.print_float(active_pid_mode->Ki);Spin::Input::Controls::host_serial.print_string("\r");
-					//Spin::Input::Controls::host_serial.print_string("Kd");Spin::Input::Controls::host_serial.print_float(active_pid_mode->Kd);Spin::Input::Controls::host_serial.print_string("\r");
-					//Spin::Input::Controls::host_serial.print_string("cv_control_variable:");Spin::Input::Controls::host_serial.print_float(active_pid_mode->cv_control_variable);Spin::Input::Controls::host_serial.print_string("\r");
-					//Spin::Input::Controls::host_serial.print_string("pv_process_variable:");Spin::Input::Controls::host_serial.print_float(active_pid_mode->pv_process_variable);Spin::Input::Controls::host_serial.print_string("\r");
-					//Spin::Input::Controls::host_serial.print_string("p_proportional_variable:");Spin::Input::Controls::host_serial.print_float(active_pid_mode->p_proportional_variable);Spin::Input::Controls::host_serial.print_string("\r");
-					//Spin::Input::Controls::host_serial.print_string("i_integral_variable:");Spin::Input::Controls::host_serial.print_float(active_pid_mode->i_integral_variable);Spin::Input::Controls::host_serial.print_string("\r");
-					//Spin::Input::Controls::host_serial.print_string("d_derivative_variable:");Spin::Input::Controls::host_serial.print_float(active_pid_mode->d_derivative_variable);Spin::Input::Controls::host_serial.print_string("\r");
-					//Spin::Input::Controls::host_serial.print_string("e_error_last:");Spin::Input::Controls::host_serial.print_float(active_pid_mode->e_error_last);Spin::Input::Controls::host_serial.print_string("\r");
-					//Spin::Input::Controls::host_serial.print_string("e_error:");Spin::Input::Controls::host_serial.print_float(active_pid_mode->e_error);Spin::Input::Controls::host_serial.print_string("\r");
-					//Spin::Input::Controls::host_serial.print_string("set_last:");Spin::Input::Controls::host_serial.print_float(active_pid_mode->actual_last);Spin::Input::Controls::host_serial.print_string("\r");
-					//Spin::Input::Controls::host_serial.print_string("actual_last:");Spin::Input::Controls::host_serial.print_float(active_pid_mode->set_last);Spin::Input::Controls::host_serial.print_string("\r");
-					//while(1){}
 				}
 				OCR0A = new_pid;
 			}
-			if (Spin::Control::Input::Actions.Step.Dirty == 1) //<--Has step changed?
+			if (Spin::Input::Actions.Step.Dirty == 1) //<--Has step changed?
 			{
 				//this is only here for testing. I need a 50khz input to the motor
 				//drive and I am also borrowing that pulse generator as an rpm request
@@ -127,8 +103,8 @@ void Spin::Controller::run()
 				//Spin::Controller::host_serial.print_string("requested rpm:");
 				//Spin::Controller::host_serial.print_int32(Spin::Control::Input::Actions.Step.Value);
 				//Spin::Controller::host_serial.print_string("\r");
-				Spin::Control::Input::Actions.Step.Dirty = 0;
-				Spin::Control::Input::timer_re_start();
+				Spin::Input::Actions.Step.Dirty = 0;
+				Spin::Input::timer_re_start();
 				
 				
 				//Write the output in every loop.

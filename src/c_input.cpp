@@ -9,7 +9,7 @@
 #include "c_input.h"
 #include "c_controller.h"
 
-Spin::Control::Input::s_flags Spin::Control::Input::Actions;
+Spin::Input::s_flags Spin::Input::Actions;
 
 
 volatile uint8_t control_old_states = 255;
@@ -27,7 +27,7 @@ static uint8_t enc_val = 0;
 
 
 
-void Spin::Control::Input::update_rpm()
+void Spin::Input::update_rpm()
 {
 	if (freq_count_ticks>0)
 	{
@@ -41,25 +41,25 @@ void Spin::Control::Input::update_rpm()
 		float rps=(f_tcnt1_encoder/encoder_ticks_per_rev)* frq_gate_time_ms;
 		//float sig=(f_tcnt1_req_speed/fre)* frq_gate_time_ms;
 		//multiiply rps *60 to get rpm.
-		Spin::Control::Input::Actions.Rpm.Value = rps *60.0;
-		Spin::Control::Input::Actions.Step.Value = f_tcnt1_req_speed;
+		Spin::Input::Actions.Rpm.Value = rps *60.0;
+		Spin::Input::Actions.Step.Value = f_tcnt1_req_speed;
 		//Spin::Input::Controls::host_serial.print_string("\r");
 	}
 	return;
 }
 
-void Spin::Control::Input::initialize()
+void Spin::Input::initialize()
 {
-	Spin::Control::Input::setup_pulse_inputs();
-	Spin::Control::Input::setup_control_inputs();
-	Spin::Control::Input::setup_encoder_capture();
+	Spin::Input::setup_pulse_inputs();
+	Spin::Input::setup_control_inputs();
+	Spin::Input::setup_encoder_capture();
 	
 	Spin::Controller::host_serial.print_string("input initialized\r");//<-- Send hello message
 }
 
-void Spin::Control::Input::setup_pulse_inputs()
+void Spin::Input::setup_pulse_inputs()
 {
-	Spin::Control::Input::Actions.Step.Dirty = 0;        // reset
+	Spin::Input::Actions.Step.Dirty = 0;        // reset
 
 	//Pin D5 (PIND5) is connected to timer1 count. We use that as a hardware counter
 	//set pin to input
@@ -67,21 +67,21 @@ void Spin::Control::Input::setup_pulse_inputs()
 	//enable pull up
 	STEP_PORT |= (1<<PORTD5);// | (1<<PORTD4);
 	
-	Spin::Control::Input::timer_re_start();
+	Spin::Input::timer_re_start();
 }
 
-void Spin::Control::Input::timer_re_start()
+void Spin::Input::timer_re_start()
 {
 	freq_count_ticks = 0;//	<--reset this to 0, but count this as a tick
 	enc_ticks_in_period = 0;
 	pid_count_ticks = 0;
 	//rpm_slot = 0;
 	
-	Spin::Control::Input::timer1_reset();
-	Spin::Control::Input::timer2_reset();
+	Spin::Input::timer1_reset();
+	Spin::Input::timer2_reset();
 }
 
-void Spin::Control::Input::timer1_reset()
+void Spin::Input::timer1_reset()
 {
 	//Setup timer 1 as a simple counter
 	TCCR1A = 0;	TCCR1B = 0;	TCNT1 = 0;
@@ -89,7 +89,7 @@ void Spin::Control::Input::timer1_reset()
 	// Turn on the counter, Clock on Rise
 }
 
-void Spin::Control::Input::timer2_reset()
+void Spin::Input::timer2_reset()
 {
 	//Setup timer 2 as a timer for 1000ms
 	TCCR2A=0; TCCR2B=0; TCNT2=0;
@@ -101,7 +101,7 @@ void Spin::Control::Input::timer2_reset()
 	TIMSK2 = (1<<OCIE2A);
 }
 
-void Spin::Control::Input::setup_control_inputs()
+void Spin::Input::setup_control_inputs()
 {
 	//Set pins on port for inputs
 	CONTROl_PORT_DIRECTION &= ~((1 << DDB0) | (1 << DDB1) | (1 << DDB2));
@@ -132,7 +132,7 @@ void Spin::Control::Input::setup_control_inputs()
 	//PCIFR|=(1<<PCIF2);
 }
 
-void Spin::Control::Input::setup_encoder_capture()
+void Spin::Input::setup_encoder_capture()
 {
 	DDRD &= ~(1 << DDD2);	//input mode
 	PORTD |= (1 << PORTD2);	//enable pullup
@@ -156,7 +156,7 @@ void Spin::Control::Input::setup_encoder_capture()
 	
 }
 
-void Spin::Control::Input::encoder_update()
+void Spin::Input::encoder_update()
 {
 	
 	//////////////////////////////////////////////////////////////////////////
@@ -171,8 +171,8 @@ void Spin::Control::Input::encoder_update()
 	else if (enc_count >=encoder_ticks_per_rev)
 	enc_count = 0;
 	//////////////////////////////////////////////////////////////////////////
-	Spin::Control::Input::Actions.Encoder.Value = enc_count;
-	Spin::Control::Input::Actions.Encoder.Dirty = 1;
+	Spin::Input::Actions.Encoder.Value = enc_count;
+	Spin::Input::Actions.Encoder.Dirty = 1;
 	
 	//So long as the timer remains enabled we can track rpm.
 	enc_ticks_in_period++;
@@ -196,8 +196,8 @@ ISR(TIMER2_COMPA_vect)
 		TCCR1B = 0;//<--turn off counting on timer 1
 		TCCR2B = 0;//<--turn off timing on timer 2
 		
-		Spin::Control::Input::Actions.Rpm.Dirty = 1;//enc_ticks_in_period != 0;
-		Spin::Control::Input::Actions.Step.Dirty = 1;
+		Spin::Input::Actions.Rpm.Dirty = 1;//enc_ticks_in_period != 0;
+		Spin::Input::Actions.Step.Dirty = 1;
 		
 	}
 
@@ -212,20 +212,20 @@ ISR(PCINT0_vect)
 	
 	if (updates & (1 << Enable_Pin))
 	{
-		Spin::Control::Input::Actions.Enable.Value = (control_old_states & (1 << Enable_Pin));
-		Spin::Control::Input::Actions.Enable.Dirty = 1;//(bool) (updates & (1 << Enable_Pin));;
+		Spin::Input::Actions.Enable.Value = (control_old_states & (1 << Enable_Pin));
+		Spin::Input::Actions.Enable.Dirty = 1;//(bool) (updates & (1 << Enable_Pin));;
 	}
 	
 	if (updates & (1 << Direction_Pin))
 	{
-		Spin::Control::Input::Actions.Direction.Value = (bool) (updates & (1 << Direction_Pin));
-		Spin::Control::Input::Actions.Direction.Dirty = 1;//(bool) updates & (1 << Direction_Pin);
+		Spin::Input::Actions.Direction.Value = (bool) (updates & (1 << Direction_Pin));
+		Spin::Input::Actions.Direction.Dirty = 1;//(bool) updates & (1 << Direction_Pin);
 	}
 	
 	if (updates & (1 << Mode_Pin))
 	{
-		Spin::Control::Input::Actions.Mode.Value = (bool) (updates & (1 << Mode_Pin));
-		Spin::Control::Input::Actions.Mode.Dirty = 1;//(bool) updates & (1 << Mode_Pin);
+		Spin::Input::Actions.Mode.Value = (bool) (updates & (1 << Mode_Pin));
+		Spin::Input::Actions.Mode.Dirty = 1;//(bool) updates & (1 << Mode_Pin);
 	}
 	
 };
@@ -234,8 +234,8 @@ ISR(PCINT2_vect)
 {
 	uint8_t updates = STEP_PORT_PIN_ADDRESS ^ step_old_states;
 	
-	Spin::Control::Input::Actions.Step.Value = (STEP_PORT_PIN_ADDRESS & (1 << Step_Pin));
-	Spin::Control::Input::Actions.Step.Dirty = 1;// updates & (1 << Step_Pin);
+	Spin::Input::Actions.Step.Value = (STEP_PORT_PIN_ADDRESS & (1 << Step_Pin));
+	Spin::Input::Actions.Step.Dirty = 1;// updates & (1 << Step_Pin);
 	
 	step_old_states = STEP_PORT_PIN_ADDRESS;
 	
@@ -245,12 +245,12 @@ ISR (INT0_vect)
 {
 	//UDR0='a';
 	//c_Encoder_RPM::Encoder_Trigger();
-	Spin::Control::Input::encoder_update();
+	Spin::Input::encoder_update();
 	
 }
 
 ISR(INT1_vect)
 {
 	//	UDR0='b';
-	Spin::Control::Input::encoder_update();
+	Spin::Input::encoder_update();
 }

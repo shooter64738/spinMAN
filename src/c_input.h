@@ -37,68 +37,65 @@
 
 namespace Spin
 {
-	namespace Control
+	class Input
 	{
-		class Input
+		public:
+		struct s_flag_ui8
 		{
-			public:
-			struct s_flag_ui8
-			{
-				uint8_t Value;
-				uint8_t Dirty;
-			};
-			struct s_flag_ui16
-			{
-				uint32_t Value;
-				uint8_t Dirty;
-			};
-			struct s_flag_ui32
-			{
-				uint32_t Value;
-				uint8_t Dirty;
-			};
-			
-			struct s_flags
-			{
-				s_flag_ui32 Step;
-				s_flag_ui8 Direction;
-				s_flag_ui8 Enable;
-				s_flag_ui8 Mode;
-				s_flag_ui32 Index;
-				s_flag_ui16 Rpm;
-				s_flag_ui32 Encoder;
-			};
-			
-			
-			
-			//variables
-			public:
-			static c_Serial host_serial;
-			static s_flags Actions;
-			
-			protected:
-			private:
+			uint8_t Value;
+			uint8_t Dirty;
+		};
+		struct s_flag_ui16
+		{
+			uint32_t Value;
+			uint8_t Dirty;
+		};
+		struct s_flag_ui32
+		{
+			uint32_t Value;
+			uint8_t Dirty;
+		};
+		
+		struct s_flags
+		{
+			s_flag_ui32 Step;
+			s_flag_ui8 Direction;
+			s_flag_ui8 Enable;
+			s_flag_ui8 Mode;
+			s_flag_ui32 Index;
+			s_flag_ui16 Rpm;
+			s_flag_ui32 Encoder;
+		};
+		
+		
+		
+		//variables
+		public:
+		static c_Serial host_serial;
+		static s_flags Actions;
+		
+		protected:
+		private:
 
-			//functions
-			public:
-			
-			static void run();
-			
-			static void update_rpm();
-			static void initialize();
-			
-			static void setup_pulse_inputs();
-			static void timer_re_start();
-			static void timer1_reset();
-			static void timer2_reset();			
-			static void setup_control_inputs();
-			static void setup_encoder_capture();
-			static void encoder_update();
-			protected:
-			private:
+		//functions
+		public:
+		
+		static void run();
+		
+		static void update_rpm();
+		static void initialize();
+		
+		static void setup_pulse_inputs();
+		static void timer_re_start();
+		static void timer1_reset();
+		static void timer2_reset();
+		static void setup_control_inputs();
+		static void setup_encoder_capture();
+		static void encoder_update();
+		protected:
+		private:
 
-		}; //c_spin
-	};
+	}; //c_spin
 };
 
 #endif
