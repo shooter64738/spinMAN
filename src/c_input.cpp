@@ -1,4 +1,4 @@
-/* 
+/*
 * c_input.cpp
 *
 * Created: 10/3/2019 4:14:44 PM
@@ -31,13 +31,18 @@ void Spin::Control::Input::update_rpm()
 {
 	if (freq_count_ticks>0)
 	{
+		float timer_count = TCNT1;
 		//find factor of encoder tick over time.
-		float f_tcnt1 = ((float)enc_ticks_in_period/(float)freq_count_ticks);
+		float f_tcnt1_encoder = ((float)enc_ticks_in_period/(float)freq_count_ticks);
+		//find factor of frequency tick over time.
+		float f_tcnt1_req_speed = ((float)timer_count/(float)freq_count_ticks)*frq_gate_time_ms;
 		//calculate number of encoder ticks this would equate to, and calculate
 		//how many revolutions that would be in 1 second
-		float rps=(f_tcnt1/encoder_ticks_per_rev)* frq_gate_time_ms;
+		float rps=(f_tcnt1_encoder/encoder_ticks_per_rev)* frq_gate_time_ms;
+		//float sig=(f_tcnt1_req_speed/fre)* frq_gate_time_ms;
 		//multiiply rps *60 to get rpm.
 		Spin::Control::Input::Actions.Rpm.Value = rps *60.0;
+		Spin::Control::Input::Actions.Step.Value = f_tcnt1_req_speed;
 		//Spin::Input::Controls::host_serial.print_string("\r");
 	}
 	return;
@@ -49,7 +54,7 @@ void Spin::Control::Input::initialize()
 	Spin::Control::Input::setup_control_inputs();
 	Spin::Control::Input::setup_encoder_capture();
 	
-Spin::Controller::host_serial.print_string("input initialized\r");//<-- Send hello message	
+	Spin::Controller::host_serial.print_string("input initialized\r");//<-- Send hello message
 }
 
 void Spin::Control::Input::setup_pulse_inputs()
@@ -179,7 +184,7 @@ void Spin::Control::Input::encoder_update()
 ISR(TIMER2_COMPA_vect)
 {
 	//Ive stripped this ISR down to the bare minimum. It seems to run fast enough to read a 2mhz signal reliably.
-	Spin::Control::Input::Actions.Step.Value = TCNT1;
+	
 	if (pid_count_ticks >= rpm_gate_time_ms)
 	{
 		Spin::Controller::pid_interval = 1;
@@ -187,7 +192,7 @@ ISR(TIMER2_COMPA_vect)
 	}
 	if (freq_count_ticks >= frq_gate_time_ms)
 	{
-		
+		//Spin::Control::Input::Actions.Step.Value = TCNT1;
 		TCCR1B = 0;//<--turn off counting on timer 1
 		TCCR2B = 0;//<--turn off timing on timer 2
 		
@@ -207,7 +212,7 @@ ISR(PCINT0_vect)
 	
 	if (updates & (1 << Enable_Pin))
 	{
-		Spin::Control::Input::Actions.Enable.Value = (bool) (updates & (1 << Enable_Pin));
+		Spin::Control::Input::Actions.Enable.Value = (control_old_states & (1 << Enable_Pin));
 		Spin::Control::Input::Actions.Enable.Dirty = 1;//(bool) (updates & (1 << Enable_Pin));;
 	}
 	

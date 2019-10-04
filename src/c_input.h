@@ -25,7 +25,7 @@
 
 #define encoder_ticks_per_rev 400.0
 #define frq_gate_time_ms 500.0
-#define rpm_gate_time_ms 125
+#define rpm_gate_time_ms 125.0
 #define milliseconds_per_second 1000
 
 
