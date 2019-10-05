@@ -1,0 +1,53 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="..\..\..\c_controller.cpp" />
+    <ClCompile Include="..\..\..\c_input.cpp" />
+    <ClCompile Include="..\..\..\c_output.cpp" />
+    <ClCompile Include="..\..\..\main.cpp" />
+    <ClCompile Include="Platform Specific\c_encoder_win.cpp">
+      <Filter>Platform Specific</Filter>
+    </ClCompile>
+    <ClCompile Include="Platform Specific\c_inputs_win.cpp">
+      <Filter>Platform Specific</Filter>
+    </ClCompile>
+    <ClCompile Include="Platform Specific\c_core_win.cpp">
+      <Filter>Platform Specific</Filter>
+    </ClCompile>
+    <ClCompile Include="Platform Specific\c_outputs_win.cpp">
+      <Filter>Platform Specific</Filter>
+    </ClCompile>
+    <ClCompile Include="Platform Specific\c_serial_win.cpp">
+      <Filter>Platform Specific</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Serial\c_Serial.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\c_controller.h" />
+    <ClInclude Include="..\..\..\c_input.h" />
+    <ClInclude Include="..\..\..\c_output.h" />
+    <ClInclude Include="..\..\..\hardware_def.h" />
+    <ClInclude Include="Platform Specific\c_encoder_win.h">
+      <Filter>Platform Specific</Filter>
+    </ClInclude>
+    <ClInclude Include="Platform Specific\c_inputs_win.h">
+      <Filter>Platform Specific</Filter>
+    </ClInclude>
+    <ClInclude Include="Platform Specific\c_core_win.h">
+      <Filter>Platform Specific</Filter>
+    </ClInclude>
+    <ClInclude Include="Platform Specific\c_outputs_win.h">
+      <Filter>Platform Specific</Filter>
+    </ClInclude>
+    <ClInclude Include="Platform Specific\c_serial_win.h">
+      <Filter>Platform Specific</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Serial\c_Serial.h" />
+    <ClInclude Include="..\..\..\Serial\s_buffer.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Platform Specific">
+      <UniqueIdentifier>{bd5d0cde-6e7b-4c63-bf26-12deff857f38}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
