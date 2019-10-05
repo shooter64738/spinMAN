@@ -49,8 +49,8 @@ namespace Spin
 			Spin::Controller::e_drive_states enable;
 			Spin::Controller::e_directions direction;
 			s_flag_ui32 Index;
-			int32_t sensed_rpm;
-			int32_t encoder_count;
+			int32_t sensed_rpm = 0;
+			int32_t encoder_count = 0;
 		};
 		
 		

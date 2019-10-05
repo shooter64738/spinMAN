@@ -23,6 +23,7 @@
     <ClCompile Include="Platform Specific\c_serial_win.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\..\communication_def.h" />
     <ClInclude Include="..\..\..\c_controller.h" />
     <ClInclude Include="..\..\..\c_input.h" />
     <ClInclude Include="..\..\..\c_output.h" />

@@ -30,7 +30,7 @@ void Spin::Input::check_input_states()
 
 void Spin::Input::update_rpm()
 {
-	
+	HardwareAbstractionLayer::Inputs::get_rpm();
 }
 
 void Spin::Input::update_time_keeping()
@@ -43,7 +43,7 @@ void Spin::Input::initialize()
 	Spin::Input::setup_pulse_inputs();
 	Spin::Input::check_input_states();
 	
-	Spin::Controller::host_serial.print_string("input initialized\r");//<-- Send hello message
+	Spin::Controller::host_serial.print_string("input initialized\r\n");//<-- Send hello message
 }
 
 void Spin::Input::setup_pulse_inputs()

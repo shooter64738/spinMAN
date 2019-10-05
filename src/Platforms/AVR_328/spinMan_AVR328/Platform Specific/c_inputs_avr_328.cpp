@@ -33,7 +33,6 @@ void HardwareAbstractionLayer::Inputs::get_rpm()
 		Spin::Input::Controls.step_counter = f_tcnt1_req_speed;
 		//Spin::Input::Controls::host_serial.print_string("\r");
 	}
-	return;
 }
 
 void HardwareAbstractionLayer::Inputs::initialize()
@@ -143,7 +142,7 @@ ISR(TIMER2_COMPA_vect)
 		TCNT2 = 0;//<-- clear the counter for time keeping
 		freq_count_ticks = 0;//	<--reset this to 0, but we will count this as a tick
 		enc_ticks_at_current_time = 0;
-		
+		return;
 		
 	}
 

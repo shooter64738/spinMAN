@@ -22,16 +22,12 @@ static Spin::Controller::e_drive_modes controller_mode = Spin::Controller::e_dri
 void Spin::Controller::initialize()
 {
 	Spin::Controller::host_serial = c_Serial(0,115200);//<-- Start serial at 115,200 baud on port 0
-	Spin::Controller::host_serial.print_string("proto type\r");//<-- Send hello message
+	Spin::Controller::host_serial.print_string("proto type\r\n");//<-- Send hello message
+	
 	//enable interrupts
 	HardwareAbstractionLayer::Core::start_interrupts();
 
-	//!!!ONLY USE THESE DEFAULTS FOR PROGRAM TESTING!!!
-	//This defaults the drive to enbled
-	Spin::Input::Controls.enable = Spin::Controller::e_drive_states::Enabled;
-	//This defaults the mode to velocity
-	Spin::Input::Controls.in_mode = Spin::Controller::e_drive_modes::Velocity;
-
+	
 	Spin::Input::initialize();
 	Spin::Output::initialize();
 	Spin::Controller::check_critical_states();
@@ -52,6 +48,13 @@ void Spin::Controller::run()
 	//
 	//}
 	
+	//!!!ONLY USE THESE DEFAULTS FOR PROGRAM TESTING!!!
+	//This defaults the drive to enbled
+	Spin::Input::Controls.enable = Spin::Controller::e_drive_states::Enabled;
+	//This defaults the mode to velocity
+	Spin::Input::Controls.in_mode = Spin::Controller::e_drive_modes::Velocity;
+
+
 	static int32_t new_pid = 255;
 	/*
 	#1 action priority is the enable pin. If that pin goes low EVER
@@ -92,7 +95,7 @@ void Spin::Controller::check_critical_states()
 	//See if mode has changed
 	if (Spin::Input::Controls.in_mode != Spin::Output::Controls.out_mode)
 	{
-		Spin::Controller::host_serial.print_string(" MODE CHANGE\r");
+		Spin::Controller::host_serial.print_string(" MODE CHANGE\r\n");
 		//reset the pid variables on mode change
 		//Spin::Output::set_pid_defaults();
 		//set the output mode to the mode specified by input
@@ -102,7 +105,7 @@ void Spin::Controller::check_critical_states()
 	//See if direction has changed
 	if (Spin::Input::Controls.direction != Spin::Output::Controls.direction)
 	{
-		Spin::Controller::host_serial.print_string(" DIRECTION CHANGE\r");
+		Spin::Controller::host_serial.print_string(" DIRECTION CHANGE\r\n");
 		Spin::Output::set_direction(Spin::Input::Controls.direction);
 		//reset the pid variables on direction change
 		//Spin::Output::set_pid_defaults();
@@ -145,11 +148,11 @@ void Spin::Controller::check_pid_cycle()
 			Spin::Controller::host_serial.print_int32(Spin::Input::Controls.sensed_rpm);
 			Spin::Controller::host_serial.print_string(" set:");
 			Spin::Controller::host_serial.print_int32(Spin::Input::Controls.step_counter);
-			Spin::Controller::host_serial.print_string("\r");
+			Spin::Controller::host_serial.print_string("\r\n");
 		}
 		else
 		{
-			Spin::Controller::host_serial.print_string(" pid not active\r");
+			Spin::Controller::host_serial.print_string(" pid not active\r\n");
 		}
 	}
 }

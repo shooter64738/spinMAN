@@ -24,9 +24,10 @@ void Spin::Output::initialize()
 	Spin::Output::set_pid_defaults();//<-- prep pid values for servo and velocity mode
 	HardwareAbstractionLayer::Outputs::initialize();//<--prep the pwm output timer
 	
+	Spin::Output::set_mode(Spin::Controller::e_drive_modes::Velocity);
 	Spin::Output::set_drive_state(Spin::Controller::e_drive_states::Disabled);//<--set the drive to disabled
 
-	Spin::Controller::host_serial.print_string("output initialized\r");
+	Spin::Controller::host_serial.print_string("output initialized\r\n");
 
 
 }
