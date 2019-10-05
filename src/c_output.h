@@ -9,18 +9,14 @@
 #ifndef __C_OUTPUT_H__
 #define __C_OUTPUT_H__
 
-#include <avr/io.h>
-#include <avr/interrupt.h>
+#include "hardware_def.h"
 #include "Serial\c_Serial.h"
 #include <stdint.h>
 #include "c_controller.h"
 
-#define MAX_INT INT16_MAX
-#define MAX_LONG INT32_MAX
-#define MAX_I_TERM (MAX_LONG / 2)
 
-#define SCALING_FACTOR 8
-#define PWM_OUTPUT_PIN PD6 //(pin 6 )
+
+#define OUTPUT_OFF 255
 
 namespace Spin
 {
@@ -42,7 +38,18 @@ namespace Spin
 			uint8_t invert_output;
 			void reset()
 			{
-				
+				kP = 0;
+				kI = 0;
+				kD = 0;
+				proportional = 0;
+				integral = 0;
+				derivative = 0;
+				preError = 0;
+				max = 0;
+				min = 0;
+				output = OUTPUT_OFF;
+				invert_output = 0;
+				get_pid(0,0);
 			}
 			
 			int32_t get_pid(int32_t setPoint,int32_t processValue)
@@ -66,9 +73,12 @@ namespace Spin
 				// desired setpoint.
 
 				output = proportional + (fki*integral) + (fkp*derivative);
+				
+				if (output<max) output = max;
+				else if (output<min) output = min;
+				
 				output = (invert_output?max-output:output);
-				//if (output<max) output = max;
-				//else if (output<min) output = min;
+				
 				// remember the error for the next time around.
 				preError = err;
 				
@@ -78,11 +88,24 @@ namespace Spin
 				return output;
 			}
 		};
+		
+		struct s_flags
+		{
+			uint32_t step_counter;
+			Spin::Controller::e_drive_modes out_mode;
+			Spin::Controller::e_drive_states enable;
+			Spin::Controller::e_directions direction;
+		};
+		
+		
+		
+		static s_flags Controls;
+		
 		static s_pid_terms as_position;
 		static s_pid_terms as_velocity;
 		static s_pid_terms as_torque;
 		static s_pid_terms * active_pid_mode;
-		static Spin::Controller::e_drive_modes out_mode;
+
 		protected:
 		private:
 
@@ -91,8 +114,8 @@ namespace Spin
 		static void set_output();
 		static void set_pid_defaults();
 		static void set_drive_state(Spin::Controller::e_drive_states state);
-		static void setup_pwm_timer();
 		static void set_mode(Spin::Controller::e_drive_modes out_mode);
+		static void set_direction( Spin::Controller::e_directions direction);
 	};
 };
 #endif //__C_OUTPUT_H__
