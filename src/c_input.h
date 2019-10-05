@@ -12,8 +12,9 @@
 
 
 #define ENCODER_TICKS_PER_REV 400.0
-#define FRQ_GATE_TIME_MS 500.0
-#define RPM_GATE_TIME_MS 125.0
+#define FRQ_GATE_TIME_MS 250.0//<--How often does the control timer tick. 
+#define PID_GATE_TIME_MS FRQ_GATE_TIME_MS/2 //<--Pid should update 2x faster than desired rpm is READ
+#define RPM_GATE_TIME_MS PID_GATE_TIME_MS/2//<--We should get SENSED motor rpm 2x faster than pid updated
 
 
 

@@ -41,6 +41,7 @@ void Spin::Output::set_pid_defaults()
 	Spin::Output::as_position.kD = 0;
 	Spin::Output::as_position.max = 255;
 	Spin::Output::as_position.min = 0;
+	Spin::Output::as_position.initialize();
 
 	Spin::Output::as_velocity.reset();
 	Spin::Output::as_velocity.invert_output = 1;
@@ -49,6 +50,7 @@ void Spin::Output::set_pid_defaults()
 	Spin::Output::as_velocity.kD = 1;
 	Spin::Output::as_velocity.max = 255;
 	Spin::Output::as_velocity.min = 50;
+	Spin::Output::as_velocity.initialize();
 
 	Spin::Output::as_torque.reset();
 	Spin::Output::as_torque.invert_output = 1;
@@ -57,6 +59,7 @@ void Spin::Output::set_pid_defaults()
 	Spin::Output::as_torque.kD = 0;
 	Spin::Output::as_torque.max = 255;
 	Spin::Output::as_torque.min = 0;
+	Spin::Output::as_torque.initialize();
 
 }
 

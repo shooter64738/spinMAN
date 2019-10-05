@@ -6,6 +6,7 @@ volatile uint32_t freq_count_ticks = 0;
 
 
 volatile uint16_t pid_count_ticks = 0;
+volatile uint16_t rpm_count_ticks = 0;
 volatile uint16_t freq_interval = 0;
 volatile uint16_t _ref_timer_count = 0;
 
@@ -138,17 +139,27 @@ void HardwareAbstractionLayer::Inputs::update_encoder()
 
 }
 
+void HardwareAbstractionLayer::Inputs::start_wave_read()
+{
+	TIMER_1.TCNT = 0;
+}
 
 static void TIMER_2_COMPA_vect()
 {
 	//Ive stripped this ISR down to the bare minimum. It seems to run fast enough to read a 2mhz signal reliably.
 	_ref_timer_count = TIMER_1.TCNT;
 
-	if (pid_count_ticks >= RPM_GATE_TIME_MS)
+	if (rpm_count_ticks >= RPM_GATE_TIME_MS)
+	{
+		//Spin::Controller::pid_interval = 1;
+		rpm_count_ticks = 0;
+		Spin::Input::Controls.sensed_rpm += 4;
+	}
+
+	if (pid_count_ticks >= PID_GATE_TIME_MS)
 	{
 		Spin::Controller::pid_interval = 1;
 		pid_count_ticks = 0;
-		Spin::Input::Controls.sensed_rpm++;
 	}
 
 	if (freq_count_ticks >= FRQ_GATE_TIME_MS)
@@ -167,6 +178,7 @@ static void TIMER_2_COMPA_vect()
 
 	freq_count_ticks++;
 	pid_count_ticks++;
+	rpm_count_ticks++;
 }
 
 void HardwareAbstractionLayer::Inputs::timer2_compa_vect_thread()
@@ -175,7 +187,7 @@ void HardwareAbstractionLayer::Inputs::timer2_compa_vect_thread()
 	while (true)
 	{
 		//this is a simulated pulse count from timer 1
-		TIMER_1.TCNT++;
+		TIMER_1.TCNT+=2;
 		//only run a step timer tick if the 'timer' is enabled
 		if (TIMER_2.TIMSK & (1 << OCIE2A))
 		{

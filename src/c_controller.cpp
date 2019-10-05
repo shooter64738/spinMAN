@@ -53,7 +53,7 @@ void Spin::Controller::run()
 	Spin::Input::Controls.enable = Spin::Controller::e_drive_states::Enabled;
 	//This defaults the mode to velocity
 	Spin::Input::Controls.in_mode = Spin::Controller::e_drive_modes::Velocity;
-
+	HardwareAbstractionLayer::Inputs::start_wave_read();
 
 	static int32_t new_pid = 255;
 	/*
