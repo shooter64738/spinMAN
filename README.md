@@ -5,8 +5,8 @@ This project has been COMPLETLEY re-written. It currently runs on the Atmel 328P
 You may also open and run it in MS Visual Studio in simulation mode.
 I will be adding the Atmel SAMD21 ARM chip support in the near future.
 
-##Principles of operation:
-###Velocity Mode
+## Principles of operation:
+### Velocity Mode
 1. Your CNC controler (whatever it may be) uses a PWM signal to command a spindle speed
 2. Instead of using that PWM signal directly to drive the spindle, spinMAN uses that pwm
 signal to determine a speed. If the input signal is 1hz, thats 1rpm. 100hz is 100 rpm. 
@@ -17,7 +17,7 @@ grbl have enough flexibility that you can change the source code to calculate th
 frequency for a given 'S' command without making extensive changes or additions to the 
 motion controllers core.
 
-###Position Mode
+### Position Mode
 1. spinMAN operates like a basic servo system.
 2. Pulse inputs are counted and accumualted. If the pulse count is not zero spinMAN attempts
 to drive the motor to move to that pulse count. The pusle count for that sample are cleared
@@ -27,7 +27,7 @@ a specific position, jsut send that count fo pulses to the input pin and the spi
 that far.
 
 
-###Torque Mode
+### Torque Mode
 1. spinMAN operates like a basic spindle drive.
 2. **The current (amps) load is determiend from the motor driver and a torque output is calculated.
 spinMAN will attempt to hold that torque value regardless of speed. **
