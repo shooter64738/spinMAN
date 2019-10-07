@@ -1,5 +1,7 @@
 # spinMAN
-Spindle controller/manager for embedded CNC controllers, like GRBL, Smoothie, and Tiny G.
+Spindle controller/manager for embedded CNC controllers, like GRBL, Smoothie, and Tiny G.<br>
+([**Please visit the wiki Here**](https://github.com/shooter64738/spinMAN/wiki) for wiring and other details.)
+
 
 This project has been COMPLETLEY re-written. It currently runs on the Atmel 328P chip.
 You may also open and run it in MS Visual Studio in simulation mode.
