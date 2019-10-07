@@ -97,8 +97,8 @@ void HardwareAbstractionLayer::Inputs::configure()
 	PORTD |= (1 << PORTD3);	//enable pullup
 	////
 	//Any change triggers
-	EICRA |= (1 << ISC00);	// Trigger on any change on INT0
-	EICRA |= (1 << ISC10);	// Trigger on any change on INT1
+	EICRA |= (1 << ISC00);	// Trigger on any change on INT0 PD2 (pin D2)
+	EICRA |= (1 << ISC10);	// Trigger on any change on INT1 PD3 (pin D3)
 	
 	//EICRA |= (1 << ISC00) | (1 << ISC01);	// Trigger on rising change on INT0
 	//EICRA |= (1 << ISC10) | (1 << ISC11);	// Trigger on rising change on INT1
@@ -114,6 +114,9 @@ void HardwareAbstractionLayer::Inputs::configure()
 
 void HardwareAbstractionLayer::Inputs::synch_hardware_inputs()
 {
+	//This method is called by the main program, and doesnt know which
+	//port or pins to read, so it grabs it and passed it to the overlaoded
+	//version
 	uint8_t current = CONTROL_PORT_PIN_ADDRESS ;
 	HardwareAbstractionLayer::Inputs::synch_hardware_inputs(current);
 }
@@ -157,26 +160,25 @@ ISR(TIMER2_COMPA_vect)
 
 	if (pid_count_ticks >= PID_GATE_TIME_MS)
 	{
-		intervals |=(1<<PID_INTERVAL_BIT);
 		pid_count_ticks = 0;
+		intervals |=(1<<PID_INTERVAL_BIT);
 	}
 	if (rpm_count_ticks >= RPM_GATE_TIME_MS)
 	{
-		intervals |=(1<<RPM_INTERVAL_BIT);
-		
 		_ref_enc_count = enc_ticks_at_current_time;
 		enc_ticks_at_current_time = 0; rpm_count_ticks = 0;
+		intervals |=(1<<RPM_INTERVAL_BIT);
 	}
 
 	if (tmr_count_ticks >= SET_GATE_TIME_MS)
 	{
-		intervals |=(1<<ONE_INTERVAL_BIT);
 		_ref_timer_count = TCNT1;
 		//Leave timers enabled, just reset the counters for them
 		TCNT1 = 0;//<-- clear the counter for freq read (desired rpm)
 		//TIMER_2.TCNT = 0;//<-- clear the counter for time keeping
 		//tmr_count_ticks = 0;//	<--reset this to 0, but we will count this as a tick
 		tmr_count_ticks = 0;
+		intervals |=(1<<ONE_INTERVAL_BIT);
 	}
 
 	tmr_count_ticks++;

@@ -38,6 +38,9 @@
     <ClInclude Include="Platform Specific\c_outputs_win.h" />
     <ClInclude Include="Platform Specific\c_serial_win.h" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\..\..\README.md" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{7B351DEE-DFDB-491A-89CB-A77E23B7A56A}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>

@@ -10,6 +10,7 @@ volatile uint16_t rpm_count_ticks = 0;
 volatile uint16_t freq_interval = 0;
 volatile uint16_t _ref_timer_count = 0;
 volatile uint16_t _ref_enc_count = 0;
+volatile uint8_t intervals = 0;
 
 volatile uint16_t enc_ticks_at_current_time = 0;
 volatile uint32_t enc_count = 0;
@@ -54,33 +55,38 @@ static const float SET_GATE_TIME_MS = TIMER_FRQ_HZ;
 
 void HardwareAbstractionLayer::Inputs::get_rpm()
 {
-	Spin::Controller::rpm_interval--;
 	//In velocity mode we only care if the sensed rpm matches the input rpm
 	//In position mode we only care if the sensed position matches the input position.
-	if (_ref_enc_count > 0)
-	{
-		//find factor of encoder tick over time.
-		float f_encoder = ((float)_ref_enc_count / (float)RPM_GATE_TIME_MS);
-		float rps = (f_encoder / ENCODER_TICKS_PER_REV)* TIMER_TICKS_PER_SECOND;
-		//multiiply rps *60 to get rpm.
-		Spin::Input::Controls.sensed_rpm = rps *60.0;
 
-		
-	}
+	BitClr_(intervals, RPM_INTERVAL_BIT);
+
+	//find factor of encoder tick over time.
+	float f_encoder = ((float)_ref_enc_count / (float)RPM_GATE_TIME_MS);//155 enc ticks?
+	float rps = (f_encoder / ENCODER_TICKS_PER_REV)* TIMER_TICKS_PER_SECOND;
+	//multiiply rps *60 to get rpm.
+	Spin::Input::Controls.sensed_rpm = _ref_enc_count;// rps *60.0;
 }
 
 void HardwareAbstractionLayer::Inputs::get_set_point()
 {
-	Spin::Controller::set_interval--;
-	if (_ref_timer_count > 0)
-	{
-		//find factor of frequency tick over time.
-		float f_req_value = ((float)_ref_timer_count / (SET_GATE_TIME_MS/MILLISECONDS_PER_SECOND));
-		Spin::Input::Controls.step_counter = f_req_value;
-		
-		
+	BitClr_(intervals, ONE_INTERVAL_BIT);
+	//find factor of frequency tick over time.
+	float f_req_value = ((float)_ref_timer_count / (SET_GATE_TIME_MS / MILLISECONDS_PER_SECOND));
+	Spin::Input::Controls.step_counter = f_req_value;
+}
 
-	}
+void HardwareAbstractionLayer::Inputs::check_intervals()
+{
+	uint8_t _intervals = intervals;
+
+	Spin::Controller::one_interval = BitTst(_intervals, ONE_INTERVAL_BIT);
+	Spin::Controller::pid_interval = BitTst(_intervals, PID_INTERVAL_BIT);
+
+	if (BitTst(intervals, RPM_INTERVAL_BIT))
+		HardwareAbstractionLayer::Inputs::get_rpm();
+	if (BitTst(intervals, ONE_INTERVAL_BIT))
+		HardwareAbstractionLayer::Inputs::get_set_point();
+	Spin::Input::Controls.sensed_position = enc_count;
 }
 
 void HardwareAbstractionLayer::Inputs::synch_hardware_inputs()
@@ -169,26 +175,25 @@ static void TIMER_2_COMPA_vect()
 
 	if (pid_count_ticks >= PID_GATE_TIME_MS)
 	{
-		Spin::Controller::pid_interval++;
 		pid_count_ticks = 0;
+		intervals |= (1 << PID_INTERVAL_BIT);
 	}
 	if (rpm_count_ticks >= RPM_GATE_TIME_MS)
 	{
-		Spin::Controller::rpm_interval++;
-		_ref_enc_count = enc_ticks_at_current_time;
-		enc_ticks_at_current_time = 0;
-		rpm_count_ticks = 0;
+		_ref_enc_count = 155; // enc_ticks_at_current_time;
+		enc_ticks_at_current_time = 0; rpm_count_ticks = 0;
+		intervals |= (1 << RPM_INTERVAL_BIT);
 	}
 
 	if (tmr_count_ticks >= SET_GATE_TIME_MS)
 	{
-		Spin::Controller::set_interval++;
 		_ref_timer_count = TIMER_1.TCNT;
 		//Leave timers enabled, just reset the counters for them
 		TIMER_1.TCNT = 0;//<-- clear the counter for freq read (desired rpm)
 		//TIMER_2.TCNT = 0;//<-- clear the counter for time keeping
 		//tmr_count_ticks = 0;//	<--reset this to 0, but we will count this as a tick
 		tmr_count_ticks = 0;
+		intervals |= (1 << ONE_INTERVAL_BIT);
 	}
 
 	tmr_count_ticks++;

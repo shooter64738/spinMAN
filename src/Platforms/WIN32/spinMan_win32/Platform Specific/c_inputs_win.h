@@ -15,6 +15,7 @@ namespace HardwareAbstractionLayer
 		static void synch_hardware_inputs();
 		static void start_wave_read();
 		static void HardwareAbstractionLayer::Inputs::timer2_compa_vect_thread();
+		static void check_intervals();
 	private:
 		static std::thread timer2_comp_a_thread;
 	};
