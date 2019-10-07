@@ -19,7 +19,7 @@
 
 #ifdef MSVC
 #define MAX_STEP_RATE 172000 //<--This doe not limit anything. It is only for a safety check.
-#define F_CPU 84000000
+#define F_CPU 16000000
 #define F_CPU_2 F_CPU/2
 #define _TICKS_PER_MICROSECOND (F_CPU_2/1000000)
 #include "Serial\c_Serial.h"

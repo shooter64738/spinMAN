@@ -2,13 +2,14 @@
 #include "../../../../c_input.h"
 #include "../../../../c_controller.h"
 
-volatile uint32_t freq_count_ticks = 0;
+volatile uint32_t tmr_count_ticks = 0;
 
 
 volatile uint16_t pid_count_ticks = 0;
 volatile uint16_t rpm_count_ticks = 0;
 volatile uint16_t freq_interval = 0;
 volatile uint16_t _ref_timer_count = 0;
+volatile uint16_t _ref_enc_count = 0;
 
 volatile uint16_t enc_ticks_at_current_time = 0;
 volatile uint32_t enc_count = 0;
@@ -40,28 +41,45 @@ static s_timer TIMER_0;
 static s_timer TIMER_1;
 static s_timer TIMER_2;
 
+#define TIMER_PRESCALE_MASK (1<<CS22) | (1<<CS20);  // set prescale factor of counter2 to 128 (16MHz/128 = 125000Hz)
+#define ENCODER_TICKS_PER_REV 400.0 //<--encoder ticks in a revolution
+#define PRE_SCALER 128
+#define TIMER_FRQ_HZ 1000
+#define TIMER_TICKS_PER_SECOND (F_CPU/PRE_SCALER)/TIMER_FRQ_HZ //125000; //<--frequency in hz of the timer with the selected prescaler
+#define MILLISECONDS_PER_SECOND 1000
+
+static const float PID_GATE_TIME_MS = TIMER_FRQ_HZ / 50;
+static const float RPM_GATE_TIME_MS = TIMER_FRQ_HZ / 60;
+static const float SET_GATE_TIME_MS = TIMER_FRQ_HZ;
 
 void HardwareAbstractionLayer::Inputs::get_rpm()
 {
-	if (freq_count_ticks>0)	
+	Spin::Controller::rpm_interval--;
+	//In velocity mode we only care if the sensed rpm matches the input rpm
+	//In position mode we only care if the sensed position matches the input position.
+	if (_ref_enc_count > 0)
 	{
-		float timer_ticks_at_current_time = _ref_timer_count;
 		//find factor of encoder tick over time.
-		float f_tcnt1_encoder = ((float)enc_ticks_at_current_time / (float)freq_count_ticks);
-		//find factor of frequency tick over time.
-		float f_tcnt1_req_speed = ((float)timer_ticks_at_current_time / (float)freq_count_ticks)*FRQ_GATE_TIME_MS;
-		//calculate number of encoder ticks this would equate to, and calculate
-		//how many revolutions that would be in 1 second
-		float rps = (f_tcnt1_encoder / ENCODER_TICKS_PER_REV)* FRQ_GATE_TIME_MS;
-		//float sig=(f_tcnt1_req_speed/fre)* frq_gate_time_ms;
+		float f_encoder = ((float)_ref_enc_count / (float)RPM_GATE_TIME_MS);
+		float rps = (f_encoder / ENCODER_TICKS_PER_REV)* TIMER_TICKS_PER_SECOND;
 		//multiiply rps *60 to get rpm.
-		//Spin::Input::Controls.sensed_rpm = rps *60.0;
-		Spin::Input::Controls.step_counter = f_tcnt1_req_speed;
-		if (f_tcnt1_req_speed > 600)
-		{
-			int x = 0;
-		}
-		//Spin::Input::Controls::host_serial.print_string("\r");
+		Spin::Input::Controls.sensed_rpm = rps *60.0;
+
+		
+	}
+}
+
+void HardwareAbstractionLayer::Inputs::get_set_point()
+{
+	Spin::Controller::set_interval--;
+	if (_ref_timer_count > 0)
+	{
+		//find factor of frequency tick over time.
+		float f_req_value = ((float)_ref_timer_count / (SET_GATE_TIME_MS/MILLISECONDS_PER_SECOND));
+		Spin::Input::Controls.step_counter = f_req_value;
+		
+		
+
 	}
 }
 
@@ -91,11 +109,11 @@ void HardwareAbstractionLayer::Inputs::configure()
 
 	//Setup timer 2 as a timer for 1000ms
 	TIMER_2.TCCRA = 0; TIMER_2.TCCRB = 0; TIMER_2.TCNT = 0;
-	TIMER_2.TCCRB = (1 << CS22) | (1 << CS20);  // set prescale factor of counter2 to 128 (16MHz/128 = 125000Hz)
+	TIMER_2.TCCRB = TIMER_PRESCALE_MASK;  // set prescale factor of counter2 to 128 (16MHz/128 = 125000Hz)
 	// by setting CS22=1, CS21=0, CS20=1
 	TIMER_2.TCCRA = (1 << WGM21);
-	TIMER_2.OCRA = 249; //124                     // CTC divider will divide 125Kz by 125
-	
+	TIMER_2.OCRA = ((F_CPU / PRE_SCALER) / TIMER_FRQ_HZ) - 1;// 249; //124                     // CTC divider will divide 125Kz by 125
+
 	TIMER_2.TIMSK = (1 << OCIE2A);
 
 	////Set pins on port for inputs
@@ -147,36 +165,33 @@ void HardwareAbstractionLayer::Inputs::start_wave_read()
 static void TIMER_2_COMPA_vect()
 {
 	//Ive stripped this ISR down to the bare minimum. It seems to run fast enough to read a 2mhz signal reliably.
-	_ref_timer_count = TIMER_1.TCNT;
 
-	if (rpm_count_ticks >= RPM_GATE_TIME_MS)
-	{
-		//Spin::Controller::pid_interval = 1;
-		rpm_count_ticks = 0;
-		Spin::Input::Controls.sensed_rpm += 4;
-	}
 
 	if (pid_count_ticks >= PID_GATE_TIME_MS)
 	{
-		Spin::Controller::pid_interval = 1;
+		Spin::Controller::pid_interval++;
 		pid_count_ticks = 0;
 	}
-
-	if (freq_count_ticks >= FRQ_GATE_TIME_MS)
+	if (rpm_count_ticks >= RPM_GATE_TIME_MS)
 	{
-		//Leave timers enabled, just reset the counters for them
-		//Spin::Control::Input::Actions.Step.Value = TCNT1;
-		//TCCR1B = 0;//<--turn off counting on timer 1
-		//TCCR2B = 0;//<--turn off timing on timer 2
-
-		TIMER_1.TCNT = 0;//<-- clear the counter for freq read (desired rpm)
-		TIMER_2.TCNT = 0;//<-- clear the counter for time keeping
-		freq_count_ticks = 0;//	<--reset this to 0, but we will count this as a tick
+		Spin::Controller::rpm_interval++;
+		_ref_enc_count = enc_ticks_at_current_time;
 		enc_ticks_at_current_time = 0;
-		return;
+		rpm_count_ticks = 0;
 	}
 
-	freq_count_ticks++;
+	if (tmr_count_ticks >= SET_GATE_TIME_MS)
+	{
+		Spin::Controller::set_interval++;
+		_ref_timer_count = TIMER_1.TCNT;
+		//Leave timers enabled, just reset the counters for them
+		TIMER_1.TCNT = 0;//<-- clear the counter for freq read (desired rpm)
+		//TIMER_2.TCNT = 0;//<-- clear the counter for time keeping
+		//tmr_count_ticks = 0;//	<--reset this to 0, but we will count this as a tick
+		tmr_count_ticks = 0;
+	}
+
+	tmr_count_ticks++;
 	pid_count_ticks++;
 	rpm_count_ticks++;
 }
@@ -187,12 +202,13 @@ void HardwareAbstractionLayer::Inputs::timer2_compa_vect_thread()
 	while (true)
 	{
 		//this is a simulated pulse count from timer 1
-		TIMER_1.TCNT+=2;
+		TIMER_1.TCNT += 2;
+
 		//only run a step timer tick if the 'timer' is enabled
 		if (TIMER_2.TIMSK & (1 << OCIE2A))
 		{
 			TIMER_2_COMPA_vect();
-			std::this_thread::sleep_for(std::chrono::milliseconds (1));
+			std::this_thread::sleep_for(std::chrono::milliseconds(1));
 
 		}
 	}

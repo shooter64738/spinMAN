@@ -49,10 +49,12 @@ namespace Spin
 		enum e_directions
 		{
 			Forward = 0,
-			Reverse = 1
+			Reverse = 1,
+			Free = 2
 		};
 		static c_Serial host_serial;
 		static uint8_t pid_interval;
+		static uint8_t one_interval;
 		protected:
 		private:
 
@@ -62,9 +64,7 @@ namespace Spin
 		static void run();
 		static void check_critical_states();
 		static void process();
-
 		static void check_pid_cycle();
-
 		protected:
 		private:
 		

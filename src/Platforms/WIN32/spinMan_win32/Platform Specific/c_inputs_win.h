@@ -8,6 +8,7 @@ namespace HardwareAbstractionLayer
 		
 		
 		static void get_rpm();
+		static void get_set_point();
 		static void initialize();
 		static void configure();
 		static void update_encoder();

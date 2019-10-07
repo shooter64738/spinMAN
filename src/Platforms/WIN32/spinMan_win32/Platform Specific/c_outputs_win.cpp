@@ -24,3 +24,6 @@ void HardwareAbstractionLayer::Outputs::update_output(uint16_t value)
 {
 
 }
+void HardwareAbstractionLayer::Outputs::set_direction(uint8_t direction)
+{
+}

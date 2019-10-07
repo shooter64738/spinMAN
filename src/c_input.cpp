@@ -20,6 +20,8 @@ volatile uint8_t step_old_states = 255;
 
 //static uint8_t rpm_slot = 0;
 
+
+
 void Spin::Input::check_input_states()
 {
 	
@@ -28,15 +30,6 @@ void Spin::Input::check_input_states()
 	Spin::Controller::check_critical_states();
 }
 
-void Spin::Input::update_rpm()
-{
-	HardwareAbstractionLayer::Inputs::get_rpm();
-}
-
-void Spin::Input::update_time_keeping()
-{
-	HardwareAbstractionLayer::Inputs::get_rpm();
-}
 
 void Spin::Input::initialize()
 {

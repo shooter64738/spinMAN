@@ -23,6 +23,7 @@
     <ClCompile Include="..\..\..\Serial\c_Serial.cpp">
       <Filter>Serial</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\c_configuration.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\c_controller.h" />
@@ -51,6 +52,7 @@
       <Filter>Serial</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\communication_def.h" />
+    <ClInclude Include="..\..\..\c_configuration.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Platform Specific">

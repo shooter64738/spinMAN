@@ -13,11 +13,12 @@
 #include "Serial\c_Serial.h"
 #include <stdint.h>
 #include "c_controller.h"
+#include <math.h>
 
 
 #define MAX_LONG INT32_MAX
 #define MAX_I_TERM (MAX_LONG / 2)
-#define SCALING_FACTOR 64
+#define PID_SCALING_FACTOR 128
 #define OUTPUT_OFF 255
 
 namespace Spin
@@ -25,24 +26,25 @@ namespace Spin
 	class Output
 	{
 	public:
+		struct s_pid_returns
+		{
+			int32_t errors, p_term, d_term, i_term, output;
+			int16_t lastProcessValue, lasterror;
+			int8_t errors_direction;
+		};
+
+
 		struct s_pid_terms
 		{
-			int32_t kP;
-			int32_t kI;
-			int32_t kD;
-			int32_t proportional;
-			int32_t integral;
-			int32_t derivative;
-			int32_t preError;
-			int16_t max;
-			int16_t min;
-			int32_t output;
-			uint8_t invert_output;
-			int16_t maxError;
-			int32_t maxSumError;
-			int32_t sumError;
-			int16_t lastProcessValue;
-			int32_t MAX_INT;
+			int32_t kP, kI, kD, proportional, integral, derivative
+			, maxSumError, sumError, preError, MAX_INT, output;
+			int16_t max, min, maxError;
+			uint8_t invert_output, resolution= 100;
+
+			s_pid_returns pid_calc;
+			Spin::Controller::e_directions control_direction;
+			Spin::Controller::e_drive_modes control_mode;
+			
 			void reset()
 			{
 				MAX_INT = INT16_MAX;
@@ -60,71 +62,159 @@ namespace Spin
 				maxSumError = 0;
 				output = OUTPUT_OFF;
 				invert_output = 0;
-				lastProcessValue = 0;
+				//lastProcessValue = 0;
+				//lasterror = 0;
 			}
-			
+
 			void initialize()
 			{
-				kP = kP*SCALING_FACTOR;
-				kI = kI*SCALING_FACTOR;
-				kD = kD*SCALING_FACTOR;
-
 				maxError = MAX_INT / (kP + 1);
 				maxSumError = MAX_I_TERM / (kI + 1);
 			}
 
-			int32_t calc(int16_t setPoint, int16_t processValue)
+			void reset_integral()
 			{
-
-				
+				sumError = 0;
 			}
 
-			int32_t get_pid(int32_t setPoint, int32_t processValue)
+			void _calculate(int32_t setPoint, int32_t processValue, s_pid_returns *pid_calc)
 			{
-				int16_t errors, p_term, d_term;
-				int32_t i_term, temp;
 
-				errors = setPoint - processValue;
+				int32_t temp;
+
+				//see if we are within the allowed resolution
+				int16_t res_value = (1.0 / (float)resolution)*setPoint;
+				//check range
+
+				pid_calc->errors = setPoint - processValue;
+
+				if (abs(pid_calc->errors) < res_value)
+				{
+					pid_calc->errors = 0;
+					processValue = setPoint;
+					pid_calc->output = 0;
+					return;
+				}
+
+				pid_calc->errors_direction = (pid_calc->errors < 0) ? -1 : 1;
 
 				// Calculate Pterm and limit error overflow
-				if (errors > maxError) {
-					p_term = MAX_INT;
+				if (pid_calc->errors > maxError) {
+					pid_calc->p_term = MAX_INT;
 				}
-				else if (errors < -maxError) {
-					p_term = -MAX_INT;
+				else if (pid_calc->errors < -maxError) {
+					pid_calc->p_term = -MAX_INT;
 				}
 				else {
-					p_term = kP * errors;
+					pid_calc->p_term = kP * pid_calc->errors;
 				}
 
 				// Calculate Iterm and limit integral runaway
-				temp = sumError + errors;
+				temp = sumError + (pid_calc->errors);
 				if (temp > maxSumError) {
-					i_term = MAX_I_TERM;
+					pid_calc->i_term = MAX_I_TERM;
 					sumError = maxSumError;
 				}
 				else if (temp < -maxSumError) {
-					i_term = -MAX_I_TERM;
+					pid_calc->i_term = -MAX_I_TERM;
 					sumError = -maxSumError;
 				}
 				else {
 					sumError = temp;
-					i_term = kI * sumError;
+					pid_calc->i_term = (kI * sumError);
 				}
 
+				//sumError -= (lasterror-errors);
+				pid_calc->lasterror = pid_calc->errors;
 				// Calculate Dterm
-				d_term = kD * (lastProcessValue - processValue);
+				pid_calc->d_term = (kD * (pid_calc->lastProcessValue - processValue));
 
-				lastProcessValue = processValue;
+				pid_calc->lastProcessValue = processValue;
 
-				output = (p_term + i_term + d_term) / SCALING_FACTOR;
-				if (output > MAX_INT) {
-					output = MAX_INT;
+
+				int32_t b_term = sqrt(pid_calc->i_term * pid_calc->d_term);
+				pid_calc->output = ((pid_calc->p_term + pid_calc->i_term + pid_calc->d_term) / PID_SCALING_FACTOR);
+
+			}
+
+			int32_t _clamp_output(int32_t output)
+			{
+
+				//keep output value in range for 8bit numbers
+				if (output > UINT8_MAX)
+				{
+					output = UINT8_MAX; //we have hit + saturation
+					sumError -= pid_calc.errors; //added to prevent integral windup (dont accumulate error after saturation)
 				}
-				else if (output < -MAX_INT) {
-					output = -MAX_INT;
+				else if (output < -UINT8_MAX)
+				{
+					output = -UINT8_MAX; //we have hit - saturation
+					sumError -= pid_calc.errors;  //added to prevent integral windup (dont accumulate error after saturation)
 				}
-				output >>= 7; //bit shift divide this by 128
+				//if output is - we have passed our set point
+				//if output is + we are approaching our set point
+
+				//drop the sign from the output
+				output = abs(output);
+				if (invert_output)
+					output = max - output;
+
+				return output;
+
+			}
+
+			int32_t get_pid(int32_t setPoint, int32_t processValue)
+			{
+
+				_calculate(setPoint, processValue, &pid_calc);
+				output = (pid_calc.output >> 7);
+				output = _clamp_output(output);
+
+				//if we are in velcotu mode the +/- values mean to speed up or slow down
+				if (control_mode == Spin::Controller::e_drive_modes::Position)
+				{
+				}
+				//if we are in position mode the +/- values mean to change motor directions
+				if (control_mode == Spin::Controller::e_drive_modes::Position)
+				{
+					/*
+					IF a direction change is made we must:
+					1. Reset the integral to drain the windup.
+					2. Recalculate the pid output value
+					If we do not, the motor may be running WOT and suddenly we command 
+					it to change direction. I am using very large DC motors and have
+					had one of them break a clamp and jump into the floor.
+					Not to mention the tremndous load placed on the H-Bridge driver. 
+					*/
+					//calculation shows we need to rotate motor backward. are we already going backward?
+					if (pid_calc.errors_direction < 0 && control_direction == Spin::Controller::e_directions::Forward)
+					{
+						//set motor direction to reverse
+						control_direction = Spin::Controller::e_directions::Reverse;
+						//if we have changed directions reset the integral, or we have to wait for it to unwind
+						reset_integral();
+						//get a new value. basically as if we are starting from scratch
+						_calculate(setPoint, processValue, &pid_calc);
+						output = (pid_calc.output >> 7);
+						output = _clamp_output(output);
+
+					}
+					//calculation shows we need to rotate motor forward. are we already going forward?
+					if (pid_calc.errors_direction > 0 && control_direction == Spin::Controller::e_directions::Reverse)
+					{
+						//set motor direction to reverse
+						control_direction = Spin::Controller::e_directions::Forward;
+						//if we have changed directions reset the integral, or we have to wait for it to unwind
+						reset_integral();
+						//get a new value. basically as if we are starting from scratch
+						_calculate(setPoint, processValue, &pid_calc);
+						output = (pid_calc.output >> 7);
+						output = _clamp_output(output);
+					}
+					//put the sign back on the pid value, just cause... 
+					output *= pid_calc.errors_direction;
+				}
+
 				return output;
 			}
 		};

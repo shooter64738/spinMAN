@@ -11,16 +11,15 @@
 
 
 
-#define ENCODER_TICKS_PER_REV 400.0
-#define FRQ_GATE_TIME_MS 250.0//<--How often does the control timer tick. 
-#define PID_GATE_TIME_MS FRQ_GATE_TIME_MS/2 //<--Pid should update 2x faster than desired rpm is READ
-#define RPM_GATE_TIME_MS PID_GATE_TIME_MS/2//<--We should get SENSED motor rpm 2x faster than pid updated
-
 
 
 #include "Serial\c_Serial.h"
 #include <stdint.h>
 #include "c_controller.h"
+
+#define PID_INTERVAL_BIT 0
+#define RPM_INTERVAL_BIT 1
+#define ONE_INTERVAL_BIT 2
 
 namespace Spin
 {
@@ -51,7 +50,7 @@ namespace Spin
 			Spin::Controller::e_directions direction;
 			s_flag_ui32 Index;
 			int32_t sensed_rpm = 0;
-			int32_t encoder_count = 0;
+			int32_t sensed_position = 0;
 		};
 		
 		
@@ -60,6 +59,7 @@ namespace Spin
 		public:
 		static c_Serial host_serial;
 		static s_flags Controls;
+
 		//static uint32_t Flags;
 		
 		
@@ -70,15 +70,12 @@ namespace Spin
 		public:
 		static void initialize();
 		static void check_input_states();
-		static void update_rpm();
-		static void update_time_keeping();
 		static void setup_pulse_inputs();
 		static void timer_re_start();
 		static void timer1_reset();
 		static void timer2_reset();
 		static void setup_control_inputs();
-		static void setup_encoder_capture();
-		static void encoder_update();
+		static void setup_encoder_capture();		
 		protected:
 		private:
 

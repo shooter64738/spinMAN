@@ -26,10 +26,12 @@ namespace HardwareAbstractionLayer
 		public:
 		
 		static void get_rpm();
+		static void get_set_point();
 		static void initialize();
 		static void configure();
 		static void synch_hardware_inputs();
 		static void synch_hardware_inputs(uint8_t current);
+		static void check_intervals();
 		static void update_encoder();
 	};
 };
