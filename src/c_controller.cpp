@@ -258,9 +258,10 @@ void Spin::Controller::check_pid_cycle()
 					//figure out which direction is closer!
 					
 					Spin::Input::Controls.step_counter = user_pos;
-					if ((Spin::Input::Controls.sensed_position - (int32_t)Spin::Input::Controls.step_counter) < 1)
+					if ((Spin::Input::Controls.sensed_position - (int32_t)Spin::Input::Controls.step_counter) > 1)
 					{
-						Spin::Output::active_pid_mode->control_direction = Forward;
+						//changing direction will be a shoter path to the target
+						Spin::Output::active_pid_mode->control_direction = Reverse;
 					}
 
 					//this is too touchy for PWM with interference. Hard setting a position value for testing

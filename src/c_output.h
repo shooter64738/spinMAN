@@ -129,10 +129,7 @@ namespace Spin
 					sumError = temp;
 					pid_calc->i_term = (kI * sumError);
 				}
-				if (control_mode == Spin::Controller::e_drive_modes::Position)
-				{
-					sumError -= (pid_calc->lasterror - pid_calc->errors);
-				}
+				
 				//sumError -= (lasterror-errors);
 				pid_calc->lasterror = pid_calc->errors;
 				// Calculate Dterm
@@ -186,7 +183,7 @@ namespace Spin
 			{
 
 				_calculate(setPoint, processValue, &pid_calc);
-				output = (pid_calc.output >> 7);
+				output = (pid_calc.output >> (PWM_RESOLUTION_BIT-1));
 				output = _clamp_output(output);
 
 				//if we are in velcotu mode the +/- values mean to speed up or slow down
