@@ -22,7 +22,7 @@ Spin::Output::s_pid_terms * Spin::Output::active_pid_mode;
 
 void Spin::Output::initialize()
 {
-	Spin::Output::set_pid_defaults();//<-- prep pid values for servo and velocity mode
+	Spin::Output::set_pid_values();//<-- prep pid values for servo and velocity mode
 	HardwareAbstractionLayer::Outputs::initialize();//<--prep the pwm output timer
 	
 	Spin::Output::set_mode(Spin::Controller::e_drive_modes::Velocity);
@@ -33,7 +33,7 @@ void Spin::Output::initialize()
 
 }
 
-void Spin::Output::set_pid_defaults()
+void Spin::Output::set_pid_values()
 {
 	Spin::Output::as_position.reset();
 	Spin::Output::as_position.invert_output = Spin::Configuration::Drive_Settings.Drive_Output_Inverted;
@@ -42,7 +42,7 @@ void Spin::Output::set_pid_defaults()
 	Spin::Output::as_position.kD = Spin::Configuration::PID_Tuning.Position.Kd * PID_SCALING_FACTOR;
 	Spin::Output::as_position.max = 239;	//<--this needs to be the first value that causes the motor
 											//to turn +1. 255 is minimal output on 8bit pwm, but 254
-											//may not cause the motor to start. IF this is not set
+											//may not cause the motor to start. If this is not set
 											//properly you may experience what appears to be pid oscillation
 											//but is really just motor dead time. 
 	Spin::Output::as_position.min = -239;

@@ -42,16 +42,8 @@ static s_timer TIMER_0;
 static s_timer TIMER_1;
 static s_timer TIMER_2;
 
-#define TIMER_PRESCALE_MASK (1<<CS22) | (1<<CS20);  // set prescale factor of counter2 to 128 (16MHz/128 = 125000Hz)
-#define ENCODER_TICKS_PER_REV 400.0 //<--encoder ticks in a revolution
-#define PRE_SCALER 128
-#define TIMER_FRQ_HZ 1000
-#define TIMER_TICKS_PER_SECOND (F_CPU/PRE_SCALER)/TIMER_FRQ_HZ //125000; //<--frequency in hz of the timer with the selected prescaler
-#define MILLISECONDS_PER_SECOND 1000
-
-static const float PID_GATE_TIME_MS = TIMER_FRQ_HZ / 50;
-static const float RPM_GATE_TIME_MS = TIMER_FRQ_HZ / 60;
-static const float SET_GATE_TIME_MS = TIMER_FRQ_HZ;
+volatile uint32_t enc_sum_array[ENCODER_SUM_ARRAY_SIZE];
+volatile uint8_t enc_sum_array_head = 0;
 
 void HardwareAbstractionLayer::Inputs::get_rpm()
 {
@@ -59,13 +51,19 @@ void HardwareAbstractionLayer::Inputs::get_rpm()
 	//In position mode we only care if the sensed position matches the input position.
 
 	BitClr_(intervals, RPM_INTERVAL_BIT);
+	uint32_t mean_enc = 0;
+	for (int i = 0; i<ENCODER_SUM_ARRAY_SIZE; i++)
+	{
+		mean_enc += enc_sum_array[i];
+	}
 
-	//find factor of encoder tick over time.
-	float f_encoder = ((float)_ref_enc_count / (float)RPM_GATE_TIME_MS);//155 enc ticks?
-	float rps = (f_encoder / ENCODER_TICKS_PER_REV)* TIMER_TICKS_PER_SECOND;
+	mean_enc = mean_enc / ENCODER_SUM_ARRAY_SIZE;
+	//doing some scaling up and down trying to avoid float math as much as possible.
+	int32_t rps = ((mean_enc * TIMER_FRQ_HZ) * INV_ENCODER_TICKS_PER_REV * 100 * 60) / 1000;
 	//multiiply rps *60 to get rpm.
-	Spin::Input::Controls.sensed_rpm = _ref_enc_count;// rps *60.0;
+	Spin::Input::Controls.sensed_rpm = _ref_enc_count;
 }
+
 
 void HardwareAbstractionLayer::Inputs::get_set_point()
 {
@@ -86,7 +84,7 @@ void HardwareAbstractionLayer::Inputs::check_intervals()
 		HardwareAbstractionLayer::Inputs::get_rpm();
 	if (BitTst(intervals, ONE_INTERVAL_BIT))
 		HardwareAbstractionLayer::Inputs::get_set_point();
-	Spin::Input::Controls.sensed_position = enc_count;
+	//Spin::Input::Controls.sensed_position = enc_count;
 }
 
 void HardwareAbstractionLayer::Inputs::synch_hardware_inputs()
@@ -180,7 +178,9 @@ static void TIMER_2_COMPA_vect()
 	}
 	if (rpm_count_ticks >= RPM_GATE_TIME_MS)
 	{
-		_ref_enc_count = 155; // enc_ticks_at_current_time;
+		enc_sum_array[(++enc_sum_array_head) & ENCODER_SUM_SIZE_MSK] = 9;
+		
+		_ref_enc_count = enc_ticks_at_current_time;
 		enc_ticks_at_current_time = 0; rpm_count_ticks = 0;
 		intervals |= (1 << RPM_INTERVAL_BIT);
 	}

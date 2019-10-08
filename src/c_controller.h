@@ -61,6 +61,7 @@ namespace Spin
 		//functions
 		public:
 		static void initialize();
+		static void calibrate();
 		static void run();
 		static void check_critical_states();
 		static void process();

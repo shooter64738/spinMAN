@@ -62,8 +62,14 @@ namespace Spin
 				maxSumError = 0;
 				output = OUTPUT_OFF;
 				invert_output = 0;
-				//lastProcessValue = 0;
-				//lasterror = 0;
+				pid_calc.lastProcessValue = 0;
+				pid_calc.lasterror = 0;
+				pid_calc.errors = 0;
+				pid_calc.p_term = 0;
+				pid_calc.d_term = 0;
+				pid_calc.i_term = 0;
+				pid_calc.output = 0;
+				pid_calc.errors_direction = 0;
 			}
 
 			void initialize()
@@ -123,16 +129,17 @@ namespace Spin
 					sumError = temp;
 					pid_calc->i_term = (kI * sumError);
 				}
-
+				if (control_mode == Spin::Controller::e_drive_modes::Position)
+				{
+					sumError -= (pid_calc->lasterror - pid_calc->errors);
+				}
 				//sumError -= (lasterror-errors);
 				pid_calc->lasterror = pid_calc->errors;
 				// Calculate Dterm
 				pid_calc->d_term = (kD * (pid_calc->lastProcessValue - processValue));
 
 				pid_calc->lastProcessValue = processValue;
-
-
-				int32_t b_term = sqrt(pid_calc->i_term * pid_calc->d_term);
+				
 				pid_calc->output = ((pid_calc->p_term + pid_calc->i_term + pid_calc->d_term) / PID_SCALING_FACTOR);
 
 			}
@@ -141,16 +148,28 @@ namespace Spin
 			{
 
 				//keep output value in range for 8bit numbers
-				if (output > UINT8_MAX)
+				//if (output > UINT8_MAX)
+				//{
+				//	output = UINT8_MAX; //we have hit + saturation
+				//	sumError -= pid_calc.errors; //added to prevent integral windup (dont accumulate error after saturation)
+				//}
+				//else if (output < -UINT8_MAX)
+				//{
+				//	output = -UINT8_MAX; //we have hit - saturation
+				//	sumError -= pid_calc.errors;  //added to prevent integral windup (dont accumulate error after saturation)
+				//}
+
+				if (output > max)
 				{
-					output = UINT8_MAX; //we have hit + saturation
+					output = max; //we have hit + saturation
 					sumError -= pid_calc.errors; //added to prevent integral windup (dont accumulate error after saturation)
 				}
-				else if (output < -UINT8_MAX)
+				else if (output < min)
 				{
-					output = -UINT8_MAX; //we have hit - saturation
+					output = min; //we have hit - saturation
 					sumError -= pid_calc.errors;  //added to prevent integral windup (dont accumulate error after saturation)
 				}
+
 				//if output is - we have passed our set point
 				//if output is + we are approaching our set point
 
@@ -211,10 +230,11 @@ namespace Spin
 						output = (pid_calc.output >> 7);
 						output = _clamp_output(output);
 					}
+					
+			
 					//put the sign back on the pid value, just cause... 
 					output *= pid_calc.errors_direction;
 				}
-
 				return output;
 			}
 		};
@@ -242,7 +262,7 @@ namespace Spin
 	public:
 		static void initialize();
 		static void set_output();
-		static void set_pid_defaults();
+		static void set_pid_values();
 		static void set_drive_state(Spin::Controller::e_drive_states state);
 		static void set_mode(Spin::Controller::e_drive_modes out_mode);
 		static void set_direction(Spin::Controller::e_directions direction);

@@ -17,42 +17,43 @@ volatile uint8_t intervals = 0;
 static const int8_t encoder_table[] = {0,-1,1,0,1,0,0,-1,-1,0,0,1,0,1,-1,0};
 static uint8_t enc_val = 0;
 
-#define TIMER_PRESCALE_MASK (1<<CS22) | (1<<CS20);  // set prescale factor of counter2 to 128 (16MHz/128 = 125000Hz)
-#define ENCODER_TICKS_PER_REV 400.0 //<--encoder ticks in a revolution
-#define PRE_SCALER 128
-#define TIMER_FRQ_HZ 1000
-#define TIMER_TICKS_PER_SECOND (F_CPU/PRE_SCALER)/TIMER_FRQ_HZ //125000; //<--frequency in hz of the timer with the selected prescaler
-#define MILLISECONDS_PER_SECOND 1000
 
-static const float PID_GATE_TIME_MS = TIMER_FRQ_HZ / 90;
-static const float RPM_GATE_TIME_MS = TIMER_FRQ_HZ / 100;
-static const float SET_GATE_TIME_MS = TIMER_FRQ_HZ;
-
+volatile uint32_t enc_sum_array[ENCODER_SUM_ARRAY_SIZE];
+volatile uint8_t enc_sum_array_head = 0;
 
 void HardwareAbstractionLayer::Inputs::get_rpm()
 {
 	//In velocity mode we only care if the sensed rpm matches the input rpm
 	//In position mode we only care if the sensed position matches the input position.
-	
-	BitClr_(intervals,RPM_INTERVAL_BIT);
-	
-	//find factor of encoder tick over time.
-	float f_encoder = ((float)_ref_enc_count / (float)RPM_GATE_TIME_MS);//155 enc ticks?
-	float rps = (f_encoder / ENCODER_TICKS_PER_REV)* TIMER_TICKS_PER_SECOND;
+
+	BitClr_(intervals, RPM_INTERVAL_BIT);
+	uint32_t mean_enc = 0;
+	for (int i=0;i<ENCODER_SUM_ARRAY_SIZE;i++)
+	{
+		mean_enc +=enc_sum_array[i];
+	}
+
+	mean_enc = mean_enc/ENCODER_SUM_ARRAY_SIZE;
+	//doing some scaling up and down trying to avoid float math as much as possible.
+	int32_t rps = ((mean_enc * TIMER_FRQ_HZ) * INV_ENCODER_TICKS_PER_REV * 100 * 60) / 1000;
 	//multiiply rps *60 to get rpm.
-	Spin::Input::Controls.sensed_rpm = _ref_enc_count;// rps *60.0;
+	Spin::Input::Controls.sensed_rpm = _ref_enc_count;
 }
 
 void HardwareAbstractionLayer::Inputs::get_set_point()
 {
 	BitClr_(intervals,ONE_INTERVAL_BIT);
+	
 	//find factor of frequency tick over time.
 	float f_req_value = ((float)_ref_timer_count / (SET_GATE_TIME_MS/MILLISECONDS_PER_SECOND));
 	Spin::Input::Controls.step_counter = f_req_value;
+	
+	
 }
 
 void HardwareAbstractionLayer::Inputs::initialize()
 {
+	enc_count = 1;
 	
 }
 
@@ -140,9 +141,29 @@ void HardwareAbstractionLayer::Inputs::check_intervals()
 	
 	if (BitTst(intervals,RPM_INTERVAL_BIT))
 	HardwareAbstractionLayer::Inputs::get_rpm();
-	if (BitTst(intervals,ONE_INTERVAL_BIT))
-	HardwareAbstractionLayer::Inputs::get_set_point();
+	
+	if (Spin::Controller::one_interval)
+	{
+		HardwareAbstractionLayer::Inputs::get_set_point();
+	}
+	
 	Spin::Input::Controls.sensed_position = enc_count;
+}
+
+void HardwareAbstractionLayer::Inputs::update_encoder()
+{
+	enc_val = enc_val << 2; // shift the previous state to the left
+	enc_val = enc_val | ((PIND & 0b1100) >> 2); // or the current state into the 2 rightmost bits
+	int8_t encoder_direction = encoder_table[enc_val & 0b1111];    // preform the table lookup and increment count accordingly
+	enc_count += encoder_direction;
+	
+	if (enc_count == 0)
+	enc_count = ENCODER_TICKS_PER_REV;
+	else if (enc_count >ENCODER_TICKS_PER_REV)
+	enc_count = 1;
+	
+	//So long as the timer remains enabled we can track rpm.
+	enc_ticks_at_current_time++;
 }
 
 ISR (PCINT0_vect)
@@ -165,6 +186,7 @@ ISR(TIMER2_COMPA_vect)
 	}
 	if (rpm_count_ticks >= RPM_GATE_TIME_MS)
 	{
+		enc_sum_array[(++enc_sum_array_head) & ENCODER_SUM_SIZE_MSK] = enc_ticks_at_current_time;
 		_ref_enc_count = enc_ticks_at_current_time;
 		enc_ticks_at_current_time = 0; rpm_count_ticks = 0;
 		intervals |=(1<<RPM_INTERVAL_BIT);
@@ -184,23 +206,6 @@ ISR(TIMER2_COMPA_vect)
 	tmr_count_ticks++;
 	pid_count_ticks++;
 	rpm_count_ticks++;
-}
-
-
-void HardwareAbstractionLayer::Inputs::update_encoder()
-{
-	enc_val = enc_val << 2; // shift the previous state to the left
-	enc_val = enc_val | ((PIND & 0b1100) >> 2); // or the current state into the 2 rightmost bits
-	int8_t encoder_direction = encoder_table[enc_val & 0b1111];    // preform the table lookup and increment count accordingly
-	enc_count += encoder_direction;
-	
-	if (enc_count<= 0)
-	enc_count = ENCODER_TICKS_PER_REV;
-	else if (enc_count >=ENCODER_TICKS_PER_REV)
-	enc_count = 0;
-	
-	//So long as the timer remains enabled we can track rpm.
-	enc_ticks_at_current_time++;
 }
 
 ISR (INT0_vect)
