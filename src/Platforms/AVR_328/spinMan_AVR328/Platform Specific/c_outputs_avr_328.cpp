@@ -1,4 +1,6 @@
 #include "c_outputs_avr_328.h"
+#include "..\..\..\..\c_enumerations.h"
+#include "..\..\..\..\c_configuration.h"
 
 
 void HardwareAbstractionLayer::Outputs::initialize()
@@ -14,19 +16,19 @@ void HardwareAbstractionLayer::Outputs::initialize()
 
 }
 
-void HardwareAbstractionLayer::Outputs::set_direction(uint8_t direction )
+void HardwareAbstractionLayer::Outputs::set_direction(Spin::Enums::e_directions direction )
 {
-	if (direction == 0)
+	if (direction == Spin::Enums::e_directions::Forward)
 	{
 		DIRECTION_PORT &= ~(1<<REVERSE_PIN);//make reverse pin low
 		DIRECTION_PORT |= (1<<FORWARD_PIN);//make forward pin high
 	}
-	else if (direction == 1)
+	else if (direction == Spin::Enums::e_directions::Reverse)
 	{
 		DIRECTION_PORT &= ~(1<<FORWARD_PIN);//make forward pin low
 		DIRECTION_PORT |= (1<<REVERSE_PIN);//make reverse pin high
 	}
-	else if (direction == 2)
+	else if (direction == Spin::Enums::e_directions::Free)
 	{
 		//freewheel
 		DIRECTION_PORT |= (1<<FORWARD_PIN);//make forward pin high
@@ -34,20 +36,11 @@ void HardwareAbstractionLayer::Outputs::set_direction(uint8_t direction )
 	}
 }
 
-void HardwareAbstractionLayer::Outputs::disable_output(uint16_t off_value)
-{
-	//disable pwm output
-	OCR0A = off_value;
-	HardwareAbstractionLayer::Outputs::disable_output();
-}
-
 void HardwareAbstractionLayer::Outputs::disable_output()
 {
-	//DIRECTION_PORT |= (1<<REVERSE_PIN);//make reverse pin high
-	//DIRECTION_PORT |= (1<<FORWARD_PIN);//make forward pin high
 	//disable pwm output
-	//DDRD &= ~(1<<PWM_OUTPUT_PIN);
-	//TCCR0B = 0;
+	TCCR0B = 0;
+	OCR0A = Spin::Configuration::Drive_Settings.Drive_Turn_Off_Value;
 }
 
 void HardwareAbstractionLayer::Outputs::enable_output()

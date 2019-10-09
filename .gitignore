@@ -352,3 +352,5 @@ src/MotionDriver/AVR_MotionDriver/main.cpp
 src/MotionDriver/AVR_MotionDriver/c_processor.h
 src/MotionDriver/AVR_MotionDriver/AVR_MotionDriver.cppproj
 src/MotionDriver/AVR_MotionDriver/AVR_MotionDriver.componentinfo.xml
+/spinManWS.code-workspace
+/src/Platforms/make test

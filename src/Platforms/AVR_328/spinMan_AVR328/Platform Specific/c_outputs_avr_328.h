@@ -3,7 +3,9 @@
 
 #include <avr/io.h>
 #include <avr/interrupt.h>
-#include "../../../../c_controller.h"
+#include "../../../../c_enumerations.h"
+
+//#include "../../../../c_controller.h"
 
 #define PWM_OUTPUT_PIN PD6 //(pin 6 )
 #define RPM_REFERNCE_PIN 0// PD6 //(pin 6 )
@@ -21,11 +23,10 @@ namespace HardwareAbstractionLayer
 		public:
 		
 		static void initialize();
-		static void set_direction(uint8_t direction);
+		static void set_direction(Spin::Enums::e_directions direction);
 		static void enable_output();
 		static void update_output(uint16_t value);
 		static void disable_output();
-		static void disable_output(uint16_t off_value);
 	};
 };
 #endif

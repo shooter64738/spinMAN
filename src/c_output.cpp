@@ -9,6 +9,7 @@
 #include "c_output.h"
 #include "hardware_def.h"
 #include "c_configuration.h"
+#include "c_controller.h"
 
 Spin::Output::s_flags Spin::Output::Controls;
 
@@ -25,8 +26,8 @@ void Spin::Output::initialize()
 	Spin::Output::set_pid_values();//<-- prep pid values for servo and velocity mode
 	HardwareAbstractionLayer::Outputs::initialize();//<--prep the pwm output timer
 	
-	Spin::Output::set_mode(Spin::Controller::e_drive_modes::Velocity);
-	Spin::Output::set_drive_state(Spin::Controller::e_drive_states::Disabled);//<--set the drive to disabled
+	Spin::Output::set_mode(Spin::Enums::e_drive_modes::Velocity);
+	Spin::Output::set_drive_state(Spin::Enums::e_drive_states::Disabled);//<--set the drive to disabled
 
 	Spin::Controller::host_serial.print_string("output initialized\r\n");
 
@@ -47,7 +48,7 @@ void Spin::Output::set_pid_values()
 											//but is really just motor dead time. 
 	Spin::Output::as_position.min = -239;
 	Spin::Output::as_position.initialize();
-	Spin::Output::as_position.control_mode = Spin::Controller::e_drive_modes::Position;
+	Spin::Output::as_position.control_mode = Spin::Enums::e_drive_modes::Position;
 	Spin::Output::as_position.resolution = Spin::Configuration::PID_Tuning.Position.Allowed_Error_Percent;
 
 	Spin::Output::as_velocity.reset();
@@ -58,7 +59,7 @@ void Spin::Output::set_pid_values()
 	Spin::Output::as_velocity.max = 255;
 	Spin::Output::as_velocity.min = 0;
 	Spin::Output::as_velocity.initialize();
-	Spin::Output::as_velocity.control_mode = Spin::Controller::e_drive_modes::Velocity;
+	Spin::Output::as_velocity.control_mode = Spin::Enums::e_drive_modes::Velocity;
 	Spin::Output::as_velocity.resolution = Spin::Configuration::PID_Tuning.Velocity.Allowed_Error_Percent;
 
 	Spin::Output::as_torque.reset();
@@ -69,24 +70,24 @@ void Spin::Output::set_pid_values()
 	Spin::Output::as_torque.max = 255;
 	Spin::Output::as_torque.min = 0;
 	Spin::Output::as_torque.initialize();
-	Spin::Output::as_torque.control_mode = Spin::Controller::e_drive_modes::Torque;
+	Spin::Output::as_torque.control_mode = Spin::Enums::e_drive_modes::Torque;
 	Spin::Output::as_torque.resolution = Spin::Configuration::PID_Tuning.Torque.Allowed_Error_Percent;
 
 }
 
-void Spin::Output::set_drive_state(Spin::Controller::e_drive_states state)
+void Spin::Output::set_drive_state(Spin::Enums::e_drive_states state)
 {
 	Spin::Output::Controls.enable = state;
 
-	if (state == Controller::Enabled)
+	if (state == Enums::e_drive_states::Enabled)
 	{
 		HardwareAbstractionLayer::Outputs::enable_output();
 	}
 	else
 	{
-		HardwareAbstractionLayer::Outputs::disable_output(OUTPUT_OFF);
+		HardwareAbstractionLayer::Outputs::disable_output();
 		if (Spin::Output::active_pid_mode != NULL)
-			Spin::Output::active_pid_mode->pid_calc.output = OUTPUT_OFF;
+			Spin::Output::active_pid_mode->pid_calc.output = Spin::Configuration::Drive_Settings.Drive_Turn_Off_Value;
 	}
 }
 
@@ -97,24 +98,24 @@ void Spin::Output::set_output()
 	HardwareAbstractionLayer::Outputs::update_output(abs(Spin::Output::active_pid_mode->pid_calc.output));
 }
 
-void Spin::Output::set_mode(Spin::Controller::e_drive_modes new_mode)
+void Spin::Output::set_mode(Spin::Enums::e_drive_modes new_mode)
 {
 
 	Spin::Output::Controls.out_mode = new_mode;
 
 	switch (new_mode)
 	{
-		case Spin::Controller::e_drive_modes::Velocity:
+		case Spin::Enums::e_drive_modes::Velocity:
 		{
 			Spin::Output::active_pid_mode = &Spin::Output::as_velocity;//<--velocity mode (spindle)
 			break;
 		}
-		case Spin::Controller::e_drive_modes::Position:
+		case Spin::Enums::e_drive_modes::Position:
 		{
 			Spin::Output::active_pid_mode = &Spin::Output::as_position;//<--position mode (servo)
 			break;
 		}
-		case Spin::Controller::e_drive_modes::Torque:
+		case Spin::Enums::e_drive_modes::Torque:
 		{
 			Spin::Output::active_pid_mode = &Spin::Output::as_torque;//<--position mode (spindle/servo)
 			break;
@@ -129,7 +130,7 @@ void Spin::Output::set_mode(Spin::Controller::e_drive_modes new_mode)
 
 }
 
-void Spin::Output::set_direction(Spin::Controller::e_directions direction)
+void Spin::Output::set_direction(Spin::Enums::e_directions direction)
 {
 	Spin::Output::Controls.direction = direction;
 	HardwareAbstractionLayer::Outputs::set_direction(direction);

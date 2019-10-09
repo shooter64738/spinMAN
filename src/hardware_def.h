@@ -10,9 +10,11 @@
 #define PWM_RESOLUTION_BIT 8 //<--Used to keep pid output in an appropriate range.
 #define MAX_PWM_VALUE UINT8_MAX  //<--This is used to determine highest pwm output
 #include "Platforms/AVR_328/spinMan_AVR328/Platform Specific/c_core_avr_328.h"
-#include "Platforms/AVR_328/spinMan_AVR328/Platform Specific/c_inputs_avr_328.h"
 #include "Platforms/AVR_328/spinMan_AVR328/Platform Specific/c_outputs_avr_328.h"
+#include "Platforms/AVR_328/spinMan_AVR328/Platform Specific/c_inputs_avr_328.h"
 #include "Platforms/AVR_328/spinMan_AVR328/Platform Specific/c_serial_avr_328.h"
+#include "Platforms/AVR_328/spinMan_AVR328/Platform Specific/c_encoder_avr_328.h"
+#include "Platforms/AVR_328/spinMan_AVR328/Platform Specific/volatile_encoder_externs.h"
 #endif
 
 #ifdef __SAM3X8E__

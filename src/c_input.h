@@ -15,12 +15,11 @@
 
 #include "Serial\c_Serial.h"
 #include <stdint.h>
-#include "c_controller.h"
 
-#define ENCODER_SUM_ARRAY_SIZE 8
-#define ENCODER_SUM_SIZE_MSK (ENCODER_SUM_ARRAY_SIZE-1U)
+#include "c_enumerations.h"
+
+
 #define TIMER_PRESCALE_MASK (1<<CS22) | (1<<CS20);  // set prescale factor of counter2 to 128 (16MHz/128 = 125000Hz)
-#define ENCODER_TICKS_PER_REV 400.0 //<--encoder ticks in a revolution
 static const float INV_ENCODER_TICKS_PER_REV = 1.0 / 400.0; //<--encoder ticks in a revolution
 #define PRE_SCALER 128
 static const float TIMER_FRQ_HZ = 1000;
@@ -41,29 +40,14 @@ namespace Spin
 	class Input
 	{
 		public:
-		struct s_flag_ui8
-		{
-			uint8_t Value;
-			uint8_t Dirty;
-		};
-		struct s_flag_ui16
-		{
-			uint32_t Value;
-			uint8_t Dirty;
-		};
-		struct s_flag_ui32
-		{
-			uint32_t Value;
-			uint8_t Dirty;
-		};
 		
 		struct s_flags
 		{
 			uint32_t step_counter;
-			Spin::Controller::e_drive_modes in_mode;
-			Spin::Controller::e_drive_states enable;
-			Spin::Controller::e_directions direction;
-			s_flag_ui32 Index;
+			Spin::Enums::e_drive_modes in_mode;
+			Spin::Enums::e_drive_states enable;
+			Spin::Enums::e_directions direction;
+			uint32_t index;
 			int32_t sensed_rpm = 0;
 			int32_t sensed_position = 0;
 		};

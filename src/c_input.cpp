@@ -8,6 +8,7 @@
 
 #include "c_input.h"
 #include "hardware_def.h"
+#include "c_controller.h"
 
 
 Spin::Input::s_flags Spin::Input::Controls;

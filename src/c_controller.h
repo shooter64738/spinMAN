@@ -13,12 +13,6 @@
 #include "Serial\c_Serial.h"
 #include <stdint.h>
 
-#define BitSet_(arg,posn) ((arg) |= (1UL << (posn)))
-#define BitClr_(arg,posn) ((arg) &= ~(1UL << (posn)))
-#define BitTst(arg,posn) bool((arg) & (1UL << (posn)))
-#define BitLong(n) (1UL << (n))
-#define BitGet(p,m) bool((p) & (1UL << (m)))
-
 namespace Spin
 {
 	class Controller
@@ -32,34 +26,7 @@ namespace Spin
 			//Direction = 2
 		//};
 		
-		enum e_encoder_modes
-		{
-			Quadrature = 0,
-			Simple = 1,
-			Quad_Index = 2,
-			Simple_Index = 3
-		};
-
-		enum e_drive_modes
-		{
-			Velocity = 0,
-			Position = 1,
-			Torque = 2,
-			Invalid = 3
-		};
-
-		enum e_drive_states
-		{
-			Disabled = 0,
-			Enabled = 1
-		};
-
-		enum e_directions
-		{
-			Forward = 0,
-			Reverse = 1,
-			Free = 2
-		};
+		
 		static c_Serial host_serial;
 		static uint8_t pid_interval;
 		static uint8_t one_interval;

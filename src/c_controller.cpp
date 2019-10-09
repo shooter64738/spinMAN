@@ -10,6 +10,8 @@
 #include "c_input.h"
 #include "c_output.h"
 #include "c_configuration.h"
+#include "c_enumerations.h"
+
 
 //#define DEBUG_AVR
 //#define DEBUG_AVR_PID
@@ -41,9 +43,9 @@ void Spin::Controller::initialize()
 
 void Spin::Controller::calibrate()
 {
-	Spin::Input::Controls.enable = Spin::Controller::e_drive_states::Enabled;
-	Spin::Input::Controls.in_mode = Spin::Controller::e_drive_modes::Velocity;
-	HardwareAbstractionLayer::Outputs::set_direction(1);
+	Spin::Input::Controls.enable = Spin::Enums::e_drive_states::Enabled;
+	Spin::Input::Controls.in_mode = Spin::Enums::e_drive_modes::Velocity;
+	HardwareAbstractionLayer::Outputs::set_direction(Enums::Forward);
 
 	while (1)
 	{
@@ -51,6 +53,7 @@ void Spin::Controller::calibrate()
 		HardwareAbstractionLayer::Inputs::synch_hardware_inputs(); //<--Get updated control inputs
 		Spin::Controller::sync_out_in_control(); //<--synch input controls with output controls.
 		HardwareAbstractionLayer::Inputs::check_intervals(); //<--See which intervals have a time match
+		Spin::Input::Controls.sensed_position = HardwareAbstractionLayer::Encoder::get_position();
 		Spin::Controller::check_pid_cycle();//<--check if pid time has expired, and update if needed
 		Spin::Controller::process();
 	}
@@ -73,12 +76,12 @@ void Spin::Controller::run()
 	#ifdef DEBUG_WIN32
 	//!!!ONLY USE THESE DEFAULTS FOR PROGRAM TESTING!!!
 	//This defaults the drive to enbled
-	Spin::Input::Controls.enable = Spin::Controller::e_drive_states::Enabled;
-	Spin::Input::Controls.in_mode = Spin::Controller::e_drive_modes::Position;
+	Spin::Input::Controls.enable = Spin::Enums::e_drive_states::Enabled;
+	Spin::Input::Controls.in_mode = Spin::Enums::e_drive_modes::Position;
 	//This defaults the mode to velocity
 	HardwareAbstractionLayer::Inputs::start_wave_read();
 	#endif
-	HardwareAbstractionLayer::Outputs::set_direction(1);
+	HardwareAbstractionLayer::Outputs::set_direction(Enums::Forward);
 
 
 	while (1)
@@ -103,7 +106,7 @@ void Spin::Controller::sync_out_in_control()
 		*/
 		if (!Spin::Input::Controls.enable && !Spin::Configuration::Drive_Settings.Hard_Stop_On_Disable)
 		{
-			Spin::Output::set_direction(Free);
+			Spin::Output::set_direction(Enums::e_directions::Free);
 		}
 		else
 		{
@@ -213,7 +216,7 @@ void Spin::Controller::process()
 void Spin::Controller::check_pid_cycle()
 {
 
-	if (Spin::Controller::pid_interval && Spin::Input::Controls.enable == Enabled) //<--is it time to calculate PID again?
+	if (Spin::Controller::pid_interval && Spin::Input::Controls.enable == Enums::e_drive_states::Enabled) //<--is it time to calculate PID again?
 	{
 
 		Spin::Controller::pid_interval = 0;
@@ -222,7 +225,7 @@ void Spin::Controller::check_pid_cycle()
 		//calculate the change
 		switch (Spin::Output::Controls.out_mode)
 		{
-			case Velocity:
+			case Enums::e_drive_modes::Velocity:
 			{
 				
 				
@@ -231,7 +234,7 @@ void Spin::Controller::check_pid_cycle()
 				Spin::Controller::host_serial.print_int32(Spin::Output::active_pid_mode->pid_calc.output);
 				break;
 			}
-			case Position:
+			case Enums::e_drive_modes::Position:
 			{
 				//figure out which direction is closer!
 

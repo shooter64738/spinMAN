@@ -1,25 +1,12 @@
 #include "c_inputs_avr_328.h"
 #include "../../../../c_input.h"
 #include "../../../../c_controller.h"
+#include "../../../../c_configuration.h"
+#include "../../../../bit_manipulation.h"
+#include "volatile_encoder_externs.h"
+#define __INPUT_VOLATILES__
+#include "volatile_input_externs.h"
 
-volatile uint32_t tmr_count_ticks = 0;
-volatile uint16_t pid_count_ticks = 0;
-volatile uint16_t rpm_count_ticks = 0;
-
-volatile uint16_t freq_interval = 0;
-volatile uint16_t _ref_timer_count = 0;
-volatile uint16_t _ref_enc_count = 0;
-
-volatile uint16_t enc_ticks_at_current_time = 0;
-volatile uint32_t enc_count = 0;
-volatile uint8_t intervals = 0;
-
-static const int8_t encoder_table[] = {0,-1,1,0,1,0,0,-1,-1,0,0,1,0,1,-1,0};
-static uint8_t enc_val = 0;
-
-
-volatile uint32_t enc_sum_array[ENCODER_SUM_ARRAY_SIZE];
-volatile uint8_t enc_sum_array_head = 0;
 
 void HardwareAbstractionLayer::Inputs::get_rpm()
 {
@@ -53,8 +40,8 @@ void HardwareAbstractionLayer::Inputs::get_set_point()
 
 void HardwareAbstractionLayer::Inputs::initialize()
 {
-	enc_count = 1;
 	
+	mic++;
 }
 
 void HardwareAbstractionLayer::Inputs::configure()
@@ -83,23 +70,23 @@ void HardwareAbstractionLayer::Inputs::configure()
 	CONTROl_PORT_DIRECTION &= ~((1 << DDB0) | (1 << DDB1) | (1 << DDB2));
 	//Enable pull ups
 	CONTROl_PORT |= (1<<DIRECTION_PIN)|(1<<MODE_PIN_A) |(1<<MODE_PIN_B) |(1<<ENABLE_PIN);
-	
-	
 	//Set the mask to check pins PB0-PB5
 	PCMSK0 = (1<<PCINT0)|(1<<PCINT1)|(1<<PCINT2)|(1<<PCINT3);
+	
 	//Set the interrupt for PORTB (PCIE0)
 	PCICR |= (1<<PCIE0);
 	PCIFR |= (1<<PCIF0);
 	
-	//Setup encoder capture
-	DDRD &= ~(1 << DDD2);	//input mode
-	PORTD |= (1 << PORTD2);	//enable pullup
-	DDRD &= ~(1 << DDD3);	//input mode
-	PORTD |= (1 << PORTD3);	//enable pullup
-	////
-	//Any change triggers
-	EICRA |= (1 << ISC00);	// Trigger on any change on INT0 PD2 (pin D2)
-	EICRA |= (1 << ISC10);	// Trigger on any change on INT1 PD3 (pin D3)
+	//HardwareAbstractionLayer::Inputs::configure_encoder_quadrature();
+	////Setup encoder capture
+	//DDRD &= ~(1 << DDD2);	//input mode
+	//PORTD |= (1 << PORTD2);	//enable pullup
+	//DDRD &= ~(1 << DDD3);	//input mode
+	//PORTD |= (1 << PORTD3);	//enable pullup
+	//////
+	////Any change triggers
+	//EICRA |= (1 << ISC00);	// Trigger on any change on INT0 PD2 (pin D2)
+	//EICRA |= (1 << ISC10);	// Trigger on any change on INT1 PD3 (pin D3)
 	
 	//EICRA |= (1 << ISC00) | (1 << ISC01);	// Trigger on rising change on INT0
 	//EICRA |= (1 << ISC10) | (1 << ISC11);	// Trigger on rising change on INT1
@@ -110,8 +97,10 @@ void HardwareAbstractionLayer::Inputs::configure()
 	//EICRA |= (1 << ISC01);	// Trigger on hi change on INT0
 	//EICRA |= (1 << ISC11);	// Trigger on hi change on INT1
 	
-	EIMSK |= (1 << INT0) | (1 << INT1);     // Enable external interrupt INT0, INT1
+	//EIMSK |= (1 << INT0) | (1 << INT1);     // Enable external interrupt INT0, INT1
 }
+
+
 
 void HardwareAbstractionLayer::Inputs::synch_hardware_inputs()
 {
@@ -127,9 +116,15 @@ void HardwareAbstractionLayer::Inputs::synch_hardware_inputs(uint8_t current)
 	//mode is read from 2 pins
 	uint8_t mode_pins = BitTst(current, MODE_PIN_A);
 	mode_pins += BitTst(current, MODE_PIN_B);
-	Spin::Input::Controls.in_mode = (Spin::Controller::e_drive_modes)mode_pins;
-	Spin::Input::Controls.enable = (Spin::Controller::e_drive_states)BitTst(current, ENABLE_PIN);
-	Spin::Input::Controls.direction = (Spin::Controller::e_directions)BitTst(current, DIRECTION_PIN);
+	Spin::Input::Controls.in_mode = (Spin::Enums::e_drive_modes)mode_pins;
+	Spin::Input::Controls.enable = (Spin::Enums::e_drive_states)BitTst(current, ENABLE_PIN);
+	Spin::Input::Controls.direction = (Spin::Enums::e_directions)BitTst(current, DIRECTION_PIN);
+}
+
+uint8_t HardwareAbstractionLayer::Inputs::get_intervals()
+{
+	uint8_t _intervals = intervals;
+	return _intervals;
 }
 
 void HardwareAbstractionLayer::Inputs::check_intervals()
@@ -147,29 +142,21 @@ void HardwareAbstractionLayer::Inputs::check_intervals()
 		HardwareAbstractionLayer::Inputs::get_set_point();
 	}
 	
-	Spin::Input::Controls.sensed_position = enc_count;
+	
 }
 
-void HardwareAbstractionLayer::Inputs::update_encoder()
-{
-	enc_val = enc_val << 2; // shift the previous state to the left
-	enc_val = enc_val | ((PIND & 0b1100) >> 2); // or the current state into the 2 rightmost bits
-	int8_t encoder_direction = encoder_table[enc_val & 0b1111];    // preform the table lookup and increment count accordingly
-	enc_count += encoder_direction;
-	
-	if (enc_count == 0)
-	enc_count = ENCODER_TICKS_PER_REV;
-	else if (enc_count >ENCODER_TICKS_PER_REV)
-	enc_count = 1;
-	
-	//So long as the timer remains enabled we can track rpm.
-	enc_ticks_at_current_time++;
-}
+
+
 
 ISR (PCINT0_vect)
 {
 	uint8_t current = CONTROL_PORT_PIN_ADDRESS ;
 	HardwareAbstractionLayer::Inputs::synch_hardware_inputs(current);
+	
+	if (BitTst(current, INDEX_PIN_ON_TIMER))
+	{
+		//enc_active_channels |= ENC_CHZ_TRK_BIT;
+	}
 	
 }
 
@@ -208,17 +195,21 @@ ISR(TIMER2_COMPA_vect)
 	rpm_count_ticks++;
 }
 
-ISR (INT0_vect)
-{
-	//UDR0='a';
-	//c_Encoder_RPM::Encoder_Trigger();
-	HardwareAbstractionLayer::Inputs::update_encoder();
-	
-}
-
-ISR(INT1_vect)
-{
-	//	UDR0='b';
-	HardwareAbstractionLayer::Inputs::update_encoder();
-}
+//ISR (INT0_vect)
+//{
+	////UDR0='a';
+	////c_Encoder_RPM::Encoder_Trigger();
+	//enc_active_channels |= ENC_CHA_TRK_BIT;
+	//Spin::Configuration::Drive_Settings.Encoder_Config.call_vect();
+	////HardwareAbstractionLayer::Inputs::update_encoder_for_quad();
+	//
+//}
+//
+//ISR(INT1_vect)
+//{
+	////	UDR0='b';
+	//enc_active_channels |= ENC_CHB_TRK_BIT;
+	//Spin::Configuration::Drive_Settings.Encoder_Config.call_vect();
+	////HardwareAbstractionLayer::Inputs::update_encoder_for_quad();
+//}
 
