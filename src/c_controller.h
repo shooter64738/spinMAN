@@ -25,11 +25,19 @@ namespace Spin
 	{
 		//variables
 		public:
-		enum e_control_flags
+		//enum e_control_flags
+		//{
+			//Enable_Disbale = 0,
+			//Mode = 1,
+			//Direction = 2
+		//};
+		
+		enum e_encoder_modes
 		{
-			Enable_Disbale = 0,
-			Mode = 1,
-			Direction = 2
+			Quadrature = 0,
+			Simple = 1,
+			Quad_Index = 2,
+			Simple_Index = 3
 		};
 
 		enum e_drive_modes

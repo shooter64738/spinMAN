@@ -77,6 +77,11 @@ void Spin::Configuration::load_defaults()
 	Spin::Configuration::User_Settings.Home_Position = 0; //default to 0
 	Spin::Configuration::User_Settings.Tool_Orientation = 0; //default to 0
 	Spin::Configuration::User_Settings.Default_Direction = Controller::e_directions::Free;//set to free spin.
+	
+	//Encoder has 100 pulses in a rotation. 
+	Spin::Configuration::Drive_Settings.Encoder_Ticks_Per_Rev = 100;
+	//If quadrature mode is active the 100 pulses per rotation is multiplied by 4 (quadrature count)
+	Spin::Configuration::Drive_Settings.Encoder_Mode = Spin::Controller::e_encoder_modes::Quadrature;
 }
 
 void Spin::Configuration::load()

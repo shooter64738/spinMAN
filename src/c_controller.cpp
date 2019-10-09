@@ -110,8 +110,7 @@ void Spin::Controller::sync_out_in_control()
 			Spin::Output::set_direction(Spin::Input::Controls.direction);
 		}
 
-		Spin::Output::set_drive_state(Spin::Input::Controls.enable);
-		return; //<--drive is disable, theres not really any point in going further.
+		Spin::Output::set_drive_state(Spin::Input::Controls.enable);		
 	}
 
 
@@ -125,6 +124,8 @@ void Spin::Controller::sync_out_in_control()
 	Spin::Output::set_mode(Spin::Input::Controls.in_mode);
 	//set the direction specified by the input pins
 	Spin::Output::set_direction(Spin::Input::Controls.direction);
+	//update input value
+	Spin::Input::Controls.step_counter = user_pos;
 
 }
 
@@ -224,7 +225,7 @@ void Spin::Controller::check_pid_cycle()
 			case Velocity:
 			{
 				
-				Spin::Input::Controls.step_counter = user_pos;
+				
 				Spin::Output::active_pid_mode->get_pid(Spin::Input::Controls.step_counter, Spin::Input::Controls.sensed_rpm);
 				Spin::Controller::host_serial.print_string(" v_pid:");
 				Spin::Controller::host_serial.print_int32(Spin::Output::active_pid_mode->pid_calc.output);
@@ -235,10 +236,13 @@ void Spin::Controller::check_pid_cycle()
 				//figure out which direction is closer!
 
 				Spin::Input::Controls.step_counter = user_pos;
-				if ((Spin::Input::Controls.sensed_position - (int32_t)Spin::Input::Controls.step_counter) > 0)
+				if (((int32_t)Spin::Input::Controls.step_counter - Spin::Input::Controls.sensed_position) < 0)
 				{
 					//changing direction will be a shorter path to the target
-					Spin::Output::active_pid_mode->control_direction = Reverse;
+					//Spin::Output::active_pid_mode->control_direction = Reverse;
+					//if we have changed directions reset the integral, or we have to wait for it to unwind
+					//TODO: Cannot change direction after motion starts. Mst set this before we start moving. 
+					Spin::Output::active_pid_mode->reset_integral();
 				}
 
 				//this is too touchy for PWM with interference. Hard setting a position value for testing
@@ -246,13 +250,11 @@ void Spin::Controller::check_pid_cycle()
 
 				//in position mode pid can return a + or - value.
 				//the direction flag should already be set.
-				if (Spin::Output::active_pid_mode->control_direction != Spin::Output::Controls.direction)
-				{
-					//On direction changes, we reset integral to dump the windup up.
-					Spin::Output::set_direction(Spin::Output::active_pid_mode->control_direction);
-				}
+				Spin::Output::set_direction(Spin::Output::active_pid_mode->control_direction);
 Spin::Controller::host_serial.print_string(" p_pid:");
 Spin::Controller::host_serial.print_int32(Spin::Output::active_pid_mode->pid_calc.output);
+Spin::Controller::host_serial.print_string(" dir:");
+Spin::Controller::host_serial.print_int32((int)Spin::Output::active_pid_mode->control_direction);
 				break;
 			}
 			default:

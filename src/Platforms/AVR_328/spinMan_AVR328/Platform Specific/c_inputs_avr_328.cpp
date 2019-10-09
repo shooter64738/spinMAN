@@ -37,7 +37,7 @@ void HardwareAbstractionLayer::Inputs::get_rpm()
 	//doing some scaling up and down trying to avoid float math as much as possible.
 	int32_t rps = ((mean_enc * TIMER_FRQ_HZ) * INV_ENCODER_TICKS_PER_REV * 100 * 60) / 1000;
 	//multiiply rps *60 to get rpm.
-	Spin::Input::Controls.sensed_rpm = _ref_enc_count;
+	Spin::Input::Controls.sensed_rpm = rps;
 }
 
 void HardwareAbstractionLayer::Inputs::get_set_point()

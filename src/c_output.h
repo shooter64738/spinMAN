@@ -136,8 +136,11 @@ namespace Spin
 				pid_calc->d_term = (kD * (pid_calc->lastProcessValue - processValue));
 
 				pid_calc->lastProcessValue = processValue;
-				
-				pid_calc->output = ((pid_calc->p_term + pid_calc->i_term + pid_calc->d_term) / PID_SCALING_FACTOR);
+float f_p = (float)pid_calc->p_term*.01;
+float f_i = (float)pid_calc->i_term*.01;
+float f_d = (float)pid_calc->d_term*.01;
+
+				pid_calc->output = ((f_p + f_i + f_d) / PID_SCALING_FACTOR);
 
 			}
 
@@ -201,33 +204,37 @@ namespace Spin
 					If we do not, the motor may be running WOT and suddenly we command 
 					it to change direction. I am using very large DC motors and have
 					had one of them break a clamp and jump into the floor.
-					Not to mention the tremndous load placed on the H-Bridge driver. 
+					Not to mention the tremendous load placed on the H-Bridge driver. 
 					*/
 					//calculation shows we need to rotate motor backward. are we already going backward?
-					if (pid_calc.errors_direction < 0 && control_direction == Spin::Controller::e_directions::Forward)
-					{
-						//set motor direction to reverse
-						control_direction = Spin::Controller::e_directions::Reverse;
-						//if we have changed directions reset the integral, or we have to wait for it to unwind
-						reset_integral();
-						//get a new value. basically as if we are starting from scratch
-						_calculate(setPoint, processValue, &pid_calc);
-						pid_calc.output = (pid_calc.output >> 7);
-						pid_calc.output = _clamp_output(pid_calc.output);
-
-					}
-					//calculation shows we need to rotate motor forward. are we already going forward?
-					if (pid_calc.errors_direction > 0 && control_direction == Spin::Controller::e_directions::Reverse)
-					{
-						//set motor direction to reverse
-						control_direction = Spin::Controller::e_directions::Forward;
-						//if we have changed directions reset the integral, or we have to wait for it to unwind
-						reset_integral();
-						//get a new value. basically as if we are starting from scratch
-						_calculate(setPoint, processValue, &pid_calc);
-						pid_calc.output = (pid_calc.output >> 7);
-						pid_calc.output = _clamp_output(pid_calc.output);
-					}
+					//if (pid_calc.errors_direction < 0 && control_direction == Spin::Controller::e_directions::Forward)
+					//{
+					//
+						////set motor direction to reverse
+						//control_direction = Spin::Controller::e_directions::Reverse;
+						//
+						////if we have changed directions reset the integral, or we have to wait for it to unwind
+						//reset_integral();
+						////get a new value. basically as if we are starting from scratch
+						//_calculate(setPoint, processValue, &pid_calc);
+						//pid_calc.output = (pid_calc.output >> 7);
+						//pid_calc.output = _clamp_output(pid_calc.output);
+//
+					//}
+					////calculation shows we need to rotate motor forward. are we already going forward?
+					//if (pid_calc.errors_direction > 0 && control_direction == Spin::Controller::e_directions::Reverse)
+					//{
+						////set motor direction to reverse
+						//control_direction = Spin::Controller::e_directions::Forward;
+						//
+						////if we have changed directions reset the integral, or we have to wait for it to unwind
+						//reset_integral();
+						////get a new value. basically as if we are starting from scratch
+						//_calculate(setPoint, processValue, &pid_calc);
+						//pid_calc.output = (pid_calc.output >> 7);
+						//pid_calc.output = _clamp_output(pid_calc.output);
+						//
+					//}
 					
 			
 					//put the sign back on the pid value, just cause... 
