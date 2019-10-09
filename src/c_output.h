@@ -37,7 +37,7 @@ namespace Spin
 		struct s_pid_terms
 		{
 			int32_t kP, kI, kD, proportional, integral, derivative
-			, maxSumError, sumError, preError, MAX_INT, output;
+			, maxSumError, sumError, preError, MAX_INT;
 			int16_t max, min, maxError;
 			uint8_t invert_output, resolution= 100;
 
@@ -60,7 +60,7 @@ namespace Spin
 				min = 0;
 				maxError = 0;
 				maxSumError = 0;
-				output = OUTPUT_OFF;
+				pid_calc.output = OUTPUT_OFF;
 				invert_output = 0;
 				pid_calc.lastProcessValue = 0;
 				pid_calc.lasterror = 0;
@@ -89,7 +89,7 @@ namespace Spin
 				int32_t temp;
 
 				//see if we are within the allowed resolution
-				int16_t res_value = (1.0 / (float)resolution)*setPoint;
+				int16_t res_value = (1.0 /	(float)resolution)*setPoint;
 				//check range
 
 				pid_calc->errors = setPoint - processValue;
@@ -183,8 +183,9 @@ namespace Spin
 			{
 
 				_calculate(setPoint, processValue, &pid_calc);
-				output = (pid_calc.output >> (PWM_RESOLUTION_BIT-1));
-				output = _clamp_output(output);
+				
+				pid_calc.output >>= ((PWM_RESOLUTION_BIT - 1));
+				pid_calc.output = _clamp_output(pid_calc.output);
 
 				//if we are in velcotu mode the +/- values mean to speed up or slow down
 				if (control_mode == Spin::Controller::e_drive_modes::Position)
@@ -211,8 +212,8 @@ namespace Spin
 						reset_integral();
 						//get a new value. basically as if we are starting from scratch
 						_calculate(setPoint, processValue, &pid_calc);
-						output = (pid_calc.output >> 7);
-						output = _clamp_output(output);
+						pid_calc.output = (pid_calc.output >> 7);
+						pid_calc.output = _clamp_output(pid_calc.output);
 
 					}
 					//calculation shows we need to rotate motor forward. are we already going forward?
@@ -224,15 +225,15 @@ namespace Spin
 						reset_integral();
 						//get a new value. basically as if we are starting from scratch
 						_calculate(setPoint, processValue, &pid_calc);
-						output = (pid_calc.output >> 7);
-						output = _clamp_output(output);
+						pid_calc.output = (pid_calc.output >> 7);
+						pid_calc.output = _clamp_output(pid_calc.output);
 					}
 					
 			
 					//put the sign back on the pid value, just cause... 
-					output *= pid_calc.errors_direction;
+					pid_calc.output *= pid_calc.errors_direction;
 				}
-				return output;
+				return pid_calc.output;
 			}
 		};
 

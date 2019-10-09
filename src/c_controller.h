@@ -63,7 +63,7 @@ namespace Spin
 		static void initialize();
 		static void calibrate();
 		static void run();
-		static void check_critical_states();
+		static void sync_out_in_control();
 		static void process();
 		static void check_pid_cycle();
 		protected:

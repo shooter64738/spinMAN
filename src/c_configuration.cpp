@@ -47,16 +47,16 @@ void Spin::Configuration::load_defaults()
 {
 	//Some default pid values
 	Spin::Configuration::PID_Tuning.Position.Kp = 1;
-	Spin::Configuration::PID_Tuning.Position.Ki = 0;
-	Spin::Configuration::PID_Tuning.Position.Kd = 0;
+	Spin::Configuration::PID_Tuning.Position.Ki = 1;
+	Spin::Configuration::PID_Tuning.Position.Kd = 1;
 	Spin::Configuration::PID_Tuning.Position.Allowed_Error_Percent = 100;
 
 	Spin::Configuration::PID_Tuning.Velocity.Kp = 1;
-	Spin::Configuration::PID_Tuning.Velocity.Ki = 0;
+	Spin::Configuration::PID_Tuning.Velocity.Ki = 1;
 	Spin::Configuration::PID_Tuning.Velocity.Kd = 1;
 	Spin::Configuration::PID_Tuning.Velocity.Allowed_Error_Percent = 100;
 
-	Spin::Configuration::PID_Tuning.Torque.Kp = 1;
+	Spin::Configuration::PID_Tuning.Torque.Kp = 0;
 	Spin::Configuration::PID_Tuning.Torque.Ki = 0;
 	Spin::Configuration::PID_Tuning.Torque.Kd = 0;
 	Spin::Configuration::PID_Tuning.Torque.Allowed_Error_Percent = 50;

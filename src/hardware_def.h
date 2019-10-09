@@ -20,7 +20,7 @@
 #endif
 
 #ifdef MSVC
-#define PWM_RESOLUTION_BIT 16 //<--Used to keep pid output in an appropriate range.
+#define PWM_RESOLUTION_BIT 8 //<--Used to keep pid output in an appropriate range.
 #define F_CPU 16000000
 #define F_CPU_2 F_CPU/2
 #define _TICKS_PER_MICROSECOND (F_CPU_2/1000000)

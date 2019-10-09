@@ -86,7 +86,7 @@ void Spin::Output::set_drive_state(Spin::Controller::e_drive_states state)
 	{
 		HardwareAbstractionLayer::Outputs::disable_output(OUTPUT_OFF);
 		if (Spin::Output::active_pid_mode != NULL)
-			Spin::Output::active_pid_mode->output = OUTPUT_OFF;
+			Spin::Output::active_pid_mode->pid_calc.output = OUTPUT_OFF;
 	}
 }
 
@@ -94,7 +94,7 @@ void Spin::Output::set_output()
 {
 	//Spin::Controller::host_serial.print_string(" pwm:");
 	//Spin::Controller::host_serial.print_int32(Spin::Output::active_pid_mode->output);
-	HardwareAbstractionLayer::Outputs::update_output(abs(Spin::Output::active_pid_mode->output));
+	HardwareAbstractionLayer::Outputs::update_output(abs(Spin::Output::active_pid_mode->pid_calc.output));
 }
 
 void Spin::Output::set_mode(Spin::Controller::e_drive_modes new_mode)
