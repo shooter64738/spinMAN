@@ -17,7 +17,7 @@
 #define STEP_PORT_PIN_ADDRESS PIND
 #define STEP_PIN PIND7			//Nano pin D7
 #define STEP_PIN_ON_TIMER PIND5			//Nano pin D5
-#define INDEX_PIN_ON_TIMER PIND4			//Nano pin D4
+
 
 
 namespace HardwareAbstractionLayer

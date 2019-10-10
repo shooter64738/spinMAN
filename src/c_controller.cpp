@@ -38,6 +38,7 @@ void Spin::Controller::initialize()
 	Spin::Input::initialize();
 	Spin::Output::initialize();
 	Spin::Controller::sync_out_in_control();
+	
 
 }
 
@@ -62,6 +63,14 @@ void Spin::Controller::calibrate()
 
 void Spin::Controller::run()
 {
+	Spin::Configuration::auto_config("Encoder\0");
+	while (1)
+	{
+		Spin::Configuration::auto_config("Encoder\0");
+		Spin::Controller::host_serial.print_string("done");
+	}
+	
+	
 	Spin::Controller::calibrate();
 	//
 	//HardwareAbstractionLayer::Outputs::enable_output();
@@ -113,7 +122,7 @@ void Spin::Controller::sync_out_in_control()
 			Spin::Output::set_direction(Spin::Input::Controls.direction);
 		}
 
-		Spin::Output::set_drive_state(Spin::Input::Controls.enable);		
+		Spin::Output::set_drive_state(Spin::Input::Controls.enable);
 	}
 
 
@@ -244,7 +253,7 @@ void Spin::Controller::check_pid_cycle()
 					//changing direction will be a shorter path to the target
 					//Spin::Output::active_pid_mode->control_direction = Reverse;
 					//if we have changed directions reset the integral, or we have to wait for it to unwind
-					//TODO: Cannot change direction after motion starts. Mst set this before we start moving. 
+					//TODO: Cannot change direction after motion starts. Mst set this before we start moving.
 					Spin::Output::active_pid_mode->reset_integral();
 				}
 
@@ -254,10 +263,10 @@ void Spin::Controller::check_pid_cycle()
 				//in position mode pid can return a + or - value.
 				//the direction flag should already be set.
 				Spin::Output::set_direction(Spin::Output::active_pid_mode->control_direction);
-Spin::Controller::host_serial.print_string(" p_pid:");
-Spin::Controller::host_serial.print_int32(Spin::Output::active_pid_mode->pid_calc.output);
-Spin::Controller::host_serial.print_string(" dir:");
-Spin::Controller::host_serial.print_int32((int)Spin::Output::active_pid_mode->control_direction);
+				Spin::Controller::host_serial.print_string(" p_pid:");
+				Spin::Controller::host_serial.print_int32(Spin::Output::active_pid_mode->pid_calc.output);
+				Spin::Controller::host_serial.print_string(" dir:");
+				Spin::Controller::host_serial.print_int32((int)Spin::Output::active_pid_mode->control_direction);
 				break;
 			}
 			default:
@@ -265,7 +274,7 @@ Spin::Controller::host_serial.print_int32((int)Spin::Output::active_pid_mode->co
 			break;
 		}
 		if (Spin::Output::active_pid_mode != NULL)
-			HardwareAbstractionLayer::Outputs::update_output(abs(Spin::Output::active_pid_mode->pid_calc.output));
+		HardwareAbstractionLayer::Outputs::update_output(abs(Spin::Output::active_pid_mode->pid_calc.output));
 	}
 	else
 	{

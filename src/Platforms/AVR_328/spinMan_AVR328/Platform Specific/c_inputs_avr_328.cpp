@@ -13,7 +13,7 @@ void HardwareAbstractionLayer::Inputs::get_rpm()
 	//In velocity mode we only care if the sensed rpm matches the input rpm
 	//In position mode we only care if the sensed position matches the input position.
 
-	BitClr_(intervals, RPM_INTERVAL_BIT);
+	BitClr_(extern_input__intervals, RPM_INTERVAL_BIT);
 	uint32_t mean_enc = 0;
 	for (int i=0;i<ENCODER_SUM_ARRAY_SIZE;i++)
 	{
@@ -29,7 +29,7 @@ void HardwareAbstractionLayer::Inputs::get_rpm()
 
 void HardwareAbstractionLayer::Inputs::get_set_point()
 {
-	BitClr_(intervals,ONE_INTERVAL_BIT);
+	BitClr_(extern_input__intervals,ONE_INTERVAL_BIT);
 	
 	//find factor of frequency tick over time.
 	float f_req_value = ((float)_ref_timer_count / (SET_GATE_TIME_MS/MILLISECONDS_PER_SECOND));
@@ -40,8 +40,7 @@ void HardwareAbstractionLayer::Inputs::get_set_point()
 
 void HardwareAbstractionLayer::Inputs::initialize()
 {
-	
-	mic++;
+		
 }
 
 void HardwareAbstractionLayer::Inputs::configure()
@@ -123,18 +122,19 @@ void HardwareAbstractionLayer::Inputs::synch_hardware_inputs(uint8_t current)
 
 uint8_t HardwareAbstractionLayer::Inputs::get_intervals()
 {
-	uint8_t _intervals = intervals;
+	uint8_t _intervals = extern_input__intervals;
+	extern_input__intervals = 0;
 	return _intervals;
 }
 
 void HardwareAbstractionLayer::Inputs::check_intervals()
 {
-	uint8_t _intervals = intervals;
+	uint8_t _intervals = extern_input__intervals;
 
 	Spin::Controller::one_interval = BitTst(_intervals,ONE_INTERVAL_BIT);
 	Spin::Controller::pid_interval = BitTst(_intervals,PID_INTERVAL_BIT);
 	
-	if (BitTst(intervals,RPM_INTERVAL_BIT))
+	if (BitTst(extern_input__intervals,RPM_INTERVAL_BIT))
 	HardwareAbstractionLayer::Inputs::get_rpm();
 	
 	if (Spin::Controller::one_interval)
@@ -153,30 +153,23 @@ ISR (PCINT0_vect)
 	uint8_t current = CONTROL_PORT_PIN_ADDRESS ;
 	HardwareAbstractionLayer::Inputs::synch_hardware_inputs(current);
 	
-	if (BitTst(current, INDEX_PIN_ON_TIMER))
-	{
-		//enc_active_channels |= ENC_CHZ_TRK_BIT;
-	}
-	
 }
 
 //This timer ticks every 1ms. 1000 of these is 1 second
 ISR(TIMER2_COMPA_vect)
 {
 	//Ive stripped this ISR down to the bare minimum. It seems to run fast enough to read a 2mhz signal reliably.
-
-
 	if (pid_count_ticks >= PID_GATE_TIME_MS)
 	{
 		pid_count_ticks = 0;
-		intervals |=(1<<PID_INTERVAL_BIT);
+		extern_input__intervals |=(1<<PID_INTERVAL_BIT);
 	}
 	if (rpm_count_ticks >= RPM_GATE_TIME_MS)
 	{
 		enc_sum_array[(++enc_sum_array_head) & ENCODER_SUM_SIZE_MSK] = enc_ticks_at_current_time;
 		_ref_enc_count = enc_ticks_at_current_time;
 		enc_ticks_at_current_time = 0; rpm_count_ticks = 0;
-		intervals |=(1<<RPM_INTERVAL_BIT);
+		extern_input__intervals |=(1<<RPM_INTERVAL_BIT);
 	}
 
 	if (tmr_count_ticks >= SET_GATE_TIME_MS)
@@ -187,29 +180,10 @@ ISR(TIMER2_COMPA_vect)
 		//TIMER_2.TCNT = 0;//<-- clear the counter for time keeping
 		//tmr_count_ticks = 0;//	<--reset this to 0, but we will count this as a tick
 		tmr_count_ticks = 0;
-		intervals |=(1<<ONE_INTERVAL_BIT);
+		extern_input__intervals |=(1<<ONE_INTERVAL_BIT);
 	}
 
 	tmr_count_ticks++;
 	pid_count_ticks++;
 	rpm_count_ticks++;
 }
-
-//ISR (INT0_vect)
-//{
-	////UDR0='a';
-	////c_Encoder_RPM::Encoder_Trigger();
-	//enc_active_channels |= ENC_CHA_TRK_BIT;
-	//Spin::Configuration::Drive_Settings.Encoder_Config.call_vect();
-	////HardwareAbstractionLayer::Inputs::update_encoder_for_quad();
-	//
-//}
-//
-//ISR(INT1_vect)
-//{
-	////	UDR0='b';
-	//enc_active_channels |= ENC_CHB_TRK_BIT;
-	//Spin::Configuration::Drive_Settings.Encoder_Config.call_vect();
-	////HardwareAbstractionLayer::Inputs::update_encoder_for_quad();
-//}
-

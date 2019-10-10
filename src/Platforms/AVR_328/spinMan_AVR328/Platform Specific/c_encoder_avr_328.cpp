@@ -7,36 +7,43 @@
 
 static const int8_t encoder_table[] = {0,-1,1,0,1,0,0,-1,-1,0,0,1,0,1,-1,0};
 
-void no_vect(){};
+void HardwareAbstractionLayer::Encoder::no_vect(){};
 
 void HardwareAbstractionLayer::Encoder::initialize()
 {
-	enc_count = 1;
-	enc_active_channels = 0;
-	Platform_Specific_HAL_Encoder_Vector = no_vect;
+	extern_encoder__enc_count = 1;
+	extern_encoder__active_channels = 0;
+	Platform_Specific_HAL_Encoder_Vector_A = HardwareAbstractionLayer::Encoder::no_vect;
+	Platform_Specific_HAL_Encoder_Vector_B = HardwareAbstractionLayer::Encoder::no_vect;
+	Platform_Specific_HAL_Encoder_Vector_Z = HardwareAbstractionLayer::Encoder::no_vect;
 }
 
 uint32_t HardwareAbstractionLayer::Encoder::get_position()
 {
-	uint32_t _enc_count = enc_count;
+	uint32_t _enc_count = extern_encoder__enc_count;
 	return _enc_count;
 }
 
-uint8_t get_encoder_active()
+uint8_t HardwareAbstractionLayer::Encoder::get_active_channels()
 {
-	return enc_active_channels;
+	uint8_t _return = extern_encoder__active_channels;
+	return _return;
 }
 
-void HardwareAbstractionLayer::Encoder::configure_encoder_z_index()
+void HardwareAbstractionLayer::Encoder::config_chz()
 {
-	//Pin D4 (PIND4) is used to read the index pulse from an encoder
-	//set pin to input
-	STEP_PORT_DIRECTION &= ~((1 << DDD4));
-	//enable pull up
-	STEP_PORT |= (1<<PORTD4);
+	//DDRD &= ~(1 << DDD4);	//input mode
+	//PORTD |= (1 << PORTD4);	//enable pullup
+	//
+	////Set the mask to check pin PD4
+	//PCMSK2 = (1<<PCINT19);
+	//
+	////Set the interrupt for PORTD (PCIE1)
+	//PCICR |= (1<<PCIE1);
+	//PCIFR |= (1<<PCIF1);
 }
 
-void HardwareAbstractionLayer::Encoder::configure_encoder_simple_int_a()
+void HardwareAbstractionLayer::Encoder::config_cha()
 {
 	////Set the mask to check pins PB0-PB5
 	//PCMSK0 = (1<<PCINT0)|(1<<PCINT1)|(1<<PCINT2)|(1<<PCINT3);
@@ -53,10 +60,10 @@ void HardwareAbstractionLayer::Encoder::configure_encoder_simple_int_a()
 	//Any change triggers
 	EICRA |= (1 << ISC00);	// Trigger on any change on INT0 PD2 (pin D2)
 	//EICRA |= (1 << ISC10);	// Trigger on any change on INT1 PD3 (pin D3)
-	EIMSK |= (1 << INT0) | (1 << INT1);     // Enable external interrupt INT0, INT1
+	EIMSK |= (1 << INT0);// | (1 << INT1);     // Enable external interrupt INT0, INT1
 }
 
-void HardwareAbstractionLayer::Encoder::configure_encoder_simple_int_b()
+void HardwareAbstractionLayer::Encoder::config_chb()
 {
 	////Set the mask to check pins PB0-PB5
 	//PCMSK0 = (1<<PCINT0)|(1<<PCINT1)|(1<<PCINT2)|(1<<PCINT3);
@@ -73,17 +80,21 @@ void HardwareAbstractionLayer::Encoder::configure_encoder_simple_int_b()
 	//Any change triggers
 	//EICRA |= (1 << ISC00);	// Trigger on any change on INT0 PD2 (pin D2)
 	EICRA |= (1 << ISC10);	// Trigger on any change on INT1 PD3 (pin D3)
-	EIMSK |= (1 << INT0) | (1 << INT1);     // Enable external interrupt INT0, INT1
+	EIMSK |= (1 << INT1);// | (1 << INT1);     // Enable external interrupt INT0, INT1
 }
 
 void HardwareAbstractionLayer::Encoder::configure_encoder_quadrature()
 {
+	HardwareAbstractionLayer::Encoder::config_cha();
+	HardwareAbstractionLayer::Encoder::config_chb();
+	HardwareAbstractionLayer::Encoder::config_chz();
+	
 	////Set the mask to check pins PB0-PB5
 	//PCMSK0 = (1<<PCINT0)|(1<<PCINT1)|(1<<PCINT2)|(1<<PCINT3);
 	////Set the interrupt for PORTB (PCIE0)
 	//PCICR |= (1<<PCIE0);
 	//PCIFR |= (1<<PCIF0);
-
+	/*
 	//Setup encoder capture
 	DDRD &= ~(1 << DDD2);	//input mode
 	PORTD |= (1 << PORTD2);	//enable pullup
@@ -94,20 +105,76 @@ void HardwareAbstractionLayer::Encoder::configure_encoder_quadrature()
 	EICRA |= (1 << ISC00);	// Trigger on any change on INT0 PD2 (pin D2)
 	EICRA |= (1 << ISC10);	// Trigger on any change on INT1 PD3 (pin D3)
 	EIMSK |= (1 << INT0) | (1 << INT1);     // Enable external interrupt INT0, INT1
+	*/
 }
 
-void HardwareAbstractionLayer::Encoder::update_encoder_for_quad()
+void HardwareAbstractionLayer::Encoder::read_cha()
 {
 	//uint32_t enc_ticks_per_rev = Spin::Configuration::Drive_Settings.Encoder_Config.Encoder_Ticks_Per_Rev;
-	uint8_t enc_val = enc_val << 2; // shift the previous state to the left
+	uint8_t enc_val = 0;
+	enc_val = enc_val << 2; // shift the previous state to the left
 	enc_val = enc_val | ((PIND & 0b1100) >> 2); // or the current state into the 2 rightmost bits
 	int8_t encoder_direction = encoder_table[enc_val & 0b1111];    // preform the table lookup and increment count accordingly
-	enc_count += encoder_direction;
+	extern_encoder__enc_count += encoder_direction;
 	
-	if (enc_count == 0)
-	enc_count = enc_ticks_per_rev;
-	else if (enc_count >enc_ticks_per_rev)
-	enc_count = 1;
+	if (extern_encoder__enc_count == 0)
+	extern_encoder__enc_count = enc_ticks_per_rev;
+	else if (extern_encoder__enc_count >enc_ticks_per_rev)
+	extern_encoder__enc_count = 1;
+	
+	//So long as the timer remains enabled we can track rpm.
+	enc_ticks_at_current_time++;
+}
+
+void HardwareAbstractionLayer::Encoder::read_chb()
+{
+	//uint32_t enc_ticks_per_rev = Spin::Configuration::Drive_Settings.Encoder_Config.Encoder_Ticks_Per_Rev;
+	uint8_t enc_val = 0;
+	enc_val = enc_val << 2; // shift the previous state to the left
+	enc_val = enc_val | ((PIND & 0b1100) >> 2); // or the current state into the 2 rightmost bits
+	int8_t encoder_direction = encoder_table[enc_val & 0b1111];    // preform the table lookup and increment count accordingly
+	extern_encoder__enc_count += encoder_direction;
+	
+	if (extern_encoder__enc_count == 0)
+	extern_encoder__enc_count = enc_ticks_per_rev;
+	else if (extern_encoder__enc_count >enc_ticks_per_rev)
+	extern_encoder__enc_count = 1;
+	
+	//So long as the timer remains enabled we can track rpm.
+	enc_ticks_at_current_time++;
+}
+
+void HardwareAbstractionLayer::Encoder::read_chz()
+{
+	//uint32_t enc_ticks_per_rev = Spin::Configuration::Drive_Settings.Encoder_Config.Encoder_Ticks_Per_Rev;
+	uint8_t enc_val = 0;
+	enc_val = enc_val << 2; // shift the previous state to the left
+	enc_val = enc_val | ((PIND & 0b1100) >> 2); // or the current state into the 2 rightmost bits
+	int8_t encoder_direction = encoder_table[enc_val & 0b1111];    // preform the table lookup and increment count accordingly
+	extern_encoder__enc_count += encoder_direction;
+	
+	if (extern_encoder__enc_count == 0)
+	extern_encoder__enc_count = enc_ticks_per_rev;
+	else if (extern_encoder__enc_count >enc_ticks_per_rev)
+	extern_encoder__enc_count = 1;
+	
+	//So long as the timer remains enabled we can track rpm.
+	enc_ticks_at_current_time++;
+}
+
+void HardwareAbstractionLayer::Encoder::read_quad()
+{
+	//uint32_t enc_ticks_per_rev = Spin::Configuration::Drive_Settings.Encoder_Config.Encoder_Ticks_Per_Rev;
+	uint8_t enc_val = 0;
+	enc_val = enc_val << 2; // shift the previous state to the left
+	enc_val = enc_val | ((PIND & 0b1100) >> 2); // or the current state into the 2 rightmost bits
+	extern_encoder__direction = encoder_table[enc_val & 0b1111];    // preform the table lookup and increment count accordingly
+	extern_encoder__enc_count += extern_encoder__direction;
+	
+	if (extern_encoder__enc_count == 0)
+	extern_encoder__enc_count = enc_ticks_per_rev;
+	else if (extern_encoder__enc_count >enc_ticks_per_rev)
+	extern_encoder__enc_count = 1;
 	
 	//So long as the timer remains enabled we can track rpm.
 	enc_ticks_at_current_time++;
@@ -118,17 +185,30 @@ ISR (INT0_vect)
 {
 	//UDR0='a';
 	//c_Encoder_RPM::Encoder_Trigger();
-	enc_active_channels |= ENC_CHA_TRK_BIT;
-	Platform_Specific_HAL_Encoder_Vector(); //call a method dependent on what the configuration told us to call!
+	extern_encoder__active_channels |= ENC_CHA_TRK_BIT;
+	Platform_Specific_HAL_Encoder_Vector_A(); //call a method dependent on what the configuration told us to call!
 	//HardwareAbstractionLayer::Inputs::update_encoder_for_quad();
 	
 }
 
 ISR(INT1_vect)
 {
-	//	UDR0='b';
-	enc_active_channels |= ENC_CHB_TRK_BIT;
-	Platform_Specific_HAL_Encoder_Vector(); //call a method dependent on what the configuration told us to call!
+	//UDR0='b';
+	extern_encoder__active_channels |= ENC_CHB_TRK_BIT;
+	Platform_Specific_HAL_Encoder_Vector_B(); //call a method dependent on what the configuration told us to call!
 	//HardwareAbstractionLayer::Inputs::update_encoder_for_quad();
 }
 
+ISR (PCINT1_vect)
+{
+	uint8_t current = PIND ;
+	
+	
+	Platform_Specific_HAL_Encoder_Vector_Z();
+	
+	if (current & INDEX_PIN)
+	{
+		//extern_encoder__active_channels |= ENC_CHZ_TRK_BIT;
+	}
+	
+}

@@ -11,6 +11,8 @@
 #define ENC_CHB_TRK_BIT (1<<1)
 #define ENC_CHZ_TRK_BIT (1<<2)
 
+#define INDEX_PIN PIND4	//Nano pin D4
+
 
 
 namespace HardwareAbstractionLayer
@@ -20,14 +22,18 @@ namespace HardwareAbstractionLayer
 		public:
 		
 		
+		static void no_vect();
 		static void initialize();
 		static uint32_t get_position();
-		static void configure_encoder_z_index();
-		static void configure_encoder_simple_int_a();
-		static void configure_encoder_simple_int_b();
+		static void config_chz();
+		static void config_cha();
+		static void config_chb();
 		static void configure_encoder_quadrature();
-		static void update_encoder_for_quad();
-		static uint8_t get_encoder_active();
+		static void read_cha();
+		static void read_chb();
+		static void read_chz();
+		static void read_quad();
+		static uint8_t get_active_channels();
 	};
 };
 

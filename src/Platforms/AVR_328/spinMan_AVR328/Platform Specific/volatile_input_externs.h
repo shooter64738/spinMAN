@@ -10,7 +10,7 @@
 	__EXTERN(uint16_t, freq_interval, 0);
 	__EXTERN(uint16_t, _ref_timer_count, 0);
 	__EXTERN(uint16_t, _ref_enc_count, 0);
-	__EXTERN(uint8_t, intervals, 0);
+	__EXTERN(uint8_t, extern_input__intervals, 0);
 #else
 	//Whatever cpp does NOT define __ENCODER_VOALTILES__ but includes this .h file will have externs defined as below:
 	#define __EXTERN(type, name, value)     extern type name; //declare it extern here
@@ -20,7 +20,7 @@
 	__EXTERN(uint16_t, freq_interval, 0);
 	__EXTERN(uint16_t, _ref_timer_count, 0);
 	__EXTERN(uint16_t, _ref_enc_count, 0);
-	__EXTERN(uint8_t, intervals, 0);
+	__EXTERN(uint8_t, extern_input__intervals, 0);
 #endif
 
 

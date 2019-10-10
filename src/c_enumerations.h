@@ -15,6 +15,13 @@ namespace Spin
 	{
 		//variables
 		//public:
+		enum e_config_results
+		{
+			Incomplete_Config = 0,
+			Encoder_Not_Available = 1,
+			Encoder_Available = 2,
+		};
+		
 		enum e_encoder_modes
 		{
 			No_Encoder = 0,
