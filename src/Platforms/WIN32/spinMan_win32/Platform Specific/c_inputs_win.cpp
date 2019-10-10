@@ -1,19 +1,11 @@
 #include "c_inputs_win.h"
 #include "../../../../c_input.h"
 #include "../../../../c_controller.h"
+#include "../../../../c_configuration.h"
+#include "../../../../bit_manipulation.h"
+#define __INPUT_VOLATILES__
+#include "volatile_input_externs.h"
 
-volatile uint32_t tmr_count_ticks = 0;
-
-
-volatile uint16_t pid_count_ticks = 0;
-volatile uint16_t rpm_count_ticks = 0;
-volatile uint16_t freq_interval = 0;
-volatile uint16_t _ref_timer_count = 0;
-volatile uint16_t _ref_enc_count = 0;
-volatile uint8_t intervals = 0;
-
-volatile uint16_t enc_ticks_at_current_time = 0;
-volatile uint32_t enc_count = 0;
 static const int8_t encoder_table[] = { 0, -1, 1, 0, 1, 0, 0, -1, -1, 0, 0, 1, 0, 1, -1, 0 };
 static uint8_t enc_val = 0;
 
@@ -42,15 +34,13 @@ static s_timer TIMER_0;
 static s_timer TIMER_1;
 static s_timer TIMER_2;
 
-volatile uint32_t enc_sum_array[ENCODER_SUM_ARRAY_SIZE];
-volatile uint8_t enc_sum_array_head = 0;
 
 void HardwareAbstractionLayer::Inputs::get_rpm()
 {
 	//In velocity mode we only care if the sensed rpm matches the input rpm
 	//In position mode we only care if the sensed position matches the input position.
 
-	BitClr_(intervals, RPM_INTERVAL_BIT);
+	BitClr_(extern_input__intervals, RPM_INTERVAL_BIT);
 	uint32_t mean_enc = 0;
 	for (int i = 0; i<ENCODER_SUM_ARRAY_SIZE; i++)
 	{
@@ -67,7 +57,7 @@ void HardwareAbstractionLayer::Inputs::get_rpm()
 
 void HardwareAbstractionLayer::Inputs::get_set_point()
 {
-	BitClr_(intervals, ONE_INTERVAL_BIT);
+	BitClr_(extern_input__intervals, ONE_INTERVAL_BIT);
 	//find factor of frequency tick over time.
 	float f_req_value = ((float)_ref_timer_count / (SET_GATE_TIME_MS / MILLISECONDS_PER_SECOND));
 	Spin::Input::Controls.step_counter = f_req_value;
@@ -75,14 +65,14 @@ void HardwareAbstractionLayer::Inputs::get_set_point()
 
 void HardwareAbstractionLayer::Inputs::check_intervals()
 {
-	uint8_t _intervals = intervals;
+	uint8_t _intervals = extern_input__intervals;
 
-	Spin::Controller::one_interval = BitTst(_intervals, ONE_INTERVAL_BIT);
-	Spin::Controller::pid_interval = BitTst(_intervals, PID_INTERVAL_BIT);
+	Spin::Controller::one_interval = BitTst(extern_input__intervals, ONE_INTERVAL_BIT);
+	Spin::Controller::pid_interval = BitTst(extern_input__intervals, PID_INTERVAL_BIT);
 
-	if (BitTst(intervals, RPM_INTERVAL_BIT))
+	if (BitTst(extern_input__intervals, RPM_INTERVAL_BIT))
 		HardwareAbstractionLayer::Inputs::get_rpm();
-	if (BitTst(intervals, ONE_INTERVAL_BIT))
+	if (BitTst(extern_input__intervals, ONE_INTERVAL_BIT))
 		HardwareAbstractionLayer::Inputs::get_set_point();
 	//Spin::Input::Controls.sensed_position = enc_count;
 }
@@ -174,7 +164,7 @@ static void TIMER_2_COMPA_vect()
 	if (pid_count_ticks >= PID_GATE_TIME_MS)
 	{
 		pid_count_ticks = 0;
-		intervals |= (1 << PID_INTERVAL_BIT);
+		extern_input__intervals |= (1 << PID_INTERVAL_BIT);
 	}
 	if (rpm_count_ticks >= RPM_GATE_TIME_MS)
 	{
@@ -182,7 +172,7 @@ static void TIMER_2_COMPA_vect()
 		
 		_ref_enc_count = enc_ticks_at_current_time;
 		enc_ticks_at_current_time = 0; rpm_count_ticks = 0;
-		intervals |= (1 << RPM_INTERVAL_BIT);
+		extern_input__intervals |= (1 << RPM_INTERVAL_BIT);
 	}
 
 	if (tmr_count_ticks >= SET_GATE_TIME_MS)
@@ -193,7 +183,7 @@ static void TIMER_2_COMPA_vect()
 		//TIMER_2.TCNT = 0;//<-- clear the counter for time keeping
 		//tmr_count_ticks = 0;//	<--reset this to 0, but we will count this as a tick
 		tmr_count_ticks = 0;
-		intervals |= (1 << ONE_INTERVAL_BIT);
+		extern_input__intervals |= (1 << ONE_INTERVAL_BIT);
 	}
 
 	tmr_count_ticks++;
