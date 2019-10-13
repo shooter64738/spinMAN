@@ -10,6 +10,9 @@
 
 void HardwareAbstractionLayer::Inputs::get_rpm()
 {
+	if (!BitTst(extern_input__intervals,RPM_INTERVAL_BIT))
+	return;//<--return if its not time
+	
 	//In velocity mode we only care if the sensed rpm matches the input rpm
 	//In position mode we only care if the sensed position matches the input position.
 
@@ -22,13 +25,16 @@ void HardwareAbstractionLayer::Inputs::get_rpm()
 
 	mean_enc = mean_enc/ENCODER_SUM_ARRAY_SIZE;
 	//doing some scaling up and down trying to avoid float math as much as possible.
-	int32_t rps = ((mean_enc * TIMER_FRQ_HZ) * INV_ENCODER_TICKS_PER_REV * 100 * 60) / 1000;
+	int32_t rps = ((mean_enc * TIMER_FRQ_HZ) * extern_encoder__ticks_per_rev * 100 * 60) / 1000;
 	//multiiply rps *60 to get rpm.
 	Spin::Input::Controls.sensed_rpm = rps;
 }
 
 void HardwareAbstractionLayer::Inputs::get_set_point()
 {
+	if (!BitTst(extern_input__intervals,ONE_INTERVAL_BIT))
+	return;//<--return if its not time
+	
 	BitClr_(extern_input__intervals,ONE_INTERVAL_BIT);
 	
 	//find factor of frequency tick over time.
@@ -119,31 +125,31 @@ void HardwareAbstractionLayer::Inputs::synch_hardware_inputs(uint8_t current)
 	Spin::Input::Controls.enable = (Spin::Enums::e_drive_states)BitTst(current, ENABLE_PIN);
 	Spin::Input::Controls.direction = (Spin::Enums::e_directions)BitTst(current, DIRECTION_PIN);
 }
-
-uint8_t HardwareAbstractionLayer::Inputs::get_intervals()
-{
-	uint8_t _intervals = extern_input__intervals;
-	extern_input__intervals = 0;
-	return _intervals;
-}
-
-void HardwareAbstractionLayer::Inputs::check_intervals()
-{
-	uint8_t _intervals = extern_input__intervals;
-
-	Spin::Controller::one_interval = BitTst(_intervals,ONE_INTERVAL_BIT);
-	Spin::Controller::pid_interval = BitTst(_intervals,PID_INTERVAL_BIT);
-	
-	if (BitTst(extern_input__intervals,RPM_INTERVAL_BIT))
-	HardwareAbstractionLayer::Inputs::get_rpm();
-	
-	if (Spin::Controller::one_interval)
-	{
-		HardwareAbstractionLayer::Inputs::get_set_point();
-	}
-	
-	
-}
+//
+//uint8_t HardwareAbstractionLayer::Inputs::get_intervals()
+//{
+	//uint8_t _intervals = extern_input__intervals;
+	//extern_input__intervals = 0;
+	//return _intervals;
+//}
+//
+//void HardwareAbstractionLayer::Inputs::check_intervals()
+//{
+	//uint8_t _intervals = extern_input__intervals;
+//
+	//Spin::Controller::one_interval = BitTst(_intervals,ONE_INTERVAL_BIT);
+	//Spin::Controller::pid_interval = BitTst(_intervals,PID_INTERVAL_BIT);
+	//
+	//if (BitTst(extern_input__intervals,RPM_INTERVAL_BIT))
+	//HardwareAbstractionLayer::Inputs::get_rpm();
+	//
+	//if (Spin::Controller::one_interval)
+	//{
+		//HardwareAbstractionLayer::Inputs::get_set_point();
+	//}
+	//
+	//
+//}
 
 
 
@@ -180,7 +186,8 @@ ISR(TIMER2_COMPA_vect)
 		//TIMER_2.TCNT = 0;//<-- clear the counter for time keeping
 		//tmr_count_ticks = 0;//	<--reset this to 0, but we will count this as a tick
 		tmr_count_ticks = 0;
-		extern_input__intervals |=(1<<ONE_INTERVAL_BIT);
+		extern_input__intervals |=(1<<ONE_INTERVAL_BIT);//<--flag that 1 second has passed
+		extern_input__intervals |=(1<<RPT_INTERVAL_BIT);//<--flag that its time to report
 	}
 
 	tmr_count_ticks++;

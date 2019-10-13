@@ -136,9 +136,9 @@ namespace Spin
 				pid_calc->d_term = (kD * (pid_calc->lastProcessValue - processValue));
 
 				pid_calc->lastProcessValue = processValue;
-float f_p = (float)pid_calc->p_term*.01;
-float f_i = (float)pid_calc->i_term*.01;
-float f_d = (float)pid_calc->d_term*.01;
+float f_p = (float)pid_calc->p_term*.1;
+float f_i = (float)pid_calc->i_term*.1;
+float f_d = (float)pid_calc->d_term*.1;
 
 				pid_calc->output = ((f_p + f_i + f_d) / PID_SCALING_FACTOR);
 

@@ -23,11 +23,13 @@ Spin::Output::s_pid_terms * Spin::Output::active_pid_mode;
 
 void Spin::Output::initialize()
 {
-	Spin::Output::set_pid_values();//<-- prep pid values for servo and velocity mode
+	Spin::Output::set_pid_values();//<-- prep pid values for servo, velocity, torque mode
 	HardwareAbstractionLayer::Outputs::initialize();//<--prep the pwm output timer
 	
 	Spin::Output::set_mode(Spin::Enums::e_drive_modes::Velocity);
 	Spin::Output::set_drive_state(Spin::Enums::e_drive_states::Disabled);//<--set the drive to disabled
+	Spin::Output::set_direction(Enums::Forward);//<default direction to forward
+
 
 	Spin::Controller::host_serial.print_string("output initialized\r\n");
 

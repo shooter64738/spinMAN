@@ -229,9 +229,9 @@ Spin::Enums::e_config_results Spin::Configuration::_config_encoder()
 	//Here we need to run a forward/reverse test to determine the proper direction of the encoder
 	
 	//Clear the encoder position
-	extern_encoder__enc_count = 0;
+	extern_encoder__count = 0;
 	Spin::Controller::host_serial.print_string("ENC_DIR\r");
-	extern_encoder__direction = 0;
+	//extern_encoder__direction = 0;
 	
 	//set output to current
 	HardwareAbstractionLayer::Outputs::enable_output();

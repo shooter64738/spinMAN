@@ -6,21 +6,26 @@
 #include "volatile_encoder_externs.h"
 
 static const int8_t encoder_table[] = {0,-1,1,0,1,0,0,-1,-1,0,0,1,0,1,-1,0};
+//static const int8_t encoder_table[] = {10,11,22,33,4,5,6,7,8,9,10,11,12,13,14,15};
+static uint8_t enc_val = 0;
 
 void HardwareAbstractionLayer::Encoder::no_vect(){};
 
 void HardwareAbstractionLayer::Encoder::initialize()
 {
-	extern_encoder__enc_count = 1;
+	extern_encoder__count = 0;
 	extern_encoder__active_channels = 0;
-	Platform_Specific_HAL_Encoder_Vector_A = HardwareAbstractionLayer::Encoder::no_vect;
-	Platform_Specific_HAL_Encoder_Vector_B = HardwareAbstractionLayer::Encoder::no_vect;
+	extern_encoder__ticks_per_rev = 400;
+	Platform_Specific_HAL_Encoder_Vector_A = HardwareAbstractionLayer::Encoder::read_quad; // HardwareAbstractionLayer::Encoder::no_vect;
+	Platform_Specific_HAL_Encoder_Vector_B = HardwareAbstractionLayer::Encoder::read_quad; //HardwareAbstractionLayer::Encoder::no_vect;
 	Platform_Specific_HAL_Encoder_Vector_Z = HardwareAbstractionLayer::Encoder::no_vect;
+	HardwareAbstractionLayer::Encoder::config_cha();
+	HardwareAbstractionLayer::Encoder::config_chb();
 }
 
 uint32_t HardwareAbstractionLayer::Encoder::get_position()
 {
-	uint32_t _enc_count = extern_encoder__enc_count;
+	uint32_t _enc_count = extern_encoder__count;
 	return _enc_count;
 }
 
@@ -110,71 +115,31 @@ void HardwareAbstractionLayer::Encoder::configure_encoder_quadrature()
 
 void HardwareAbstractionLayer::Encoder::read_cha()
 {
-	//uint32_t enc_ticks_per_rev = Spin::Configuration::Drive_Settings.Encoder_Config.Encoder_Ticks_Per_Rev;
-	uint8_t enc_val = 0;
-	enc_val = enc_val << 2; // shift the previous state to the left
-	enc_val = enc_val | ((PIND & 0b1100) >> 2); // or the current state into the 2 rightmost bits
-	int8_t encoder_direction = encoder_table[enc_val & 0b1111];    // preform the table lookup and increment count accordingly
-	extern_encoder__enc_count += encoder_direction;
-	
-	if (extern_encoder__enc_count == 0)
-	extern_encoder__enc_count = enc_ticks_per_rev;
-	else if (extern_encoder__enc_count >enc_ticks_per_rev)
-	extern_encoder__enc_count = 1;
-	
-	//So long as the timer remains enabled we can track rpm.
-	enc_ticks_at_current_time++;
 }
 
 void HardwareAbstractionLayer::Encoder::read_chb()
 {
-	//uint32_t enc_ticks_per_rev = Spin::Configuration::Drive_Settings.Encoder_Config.Encoder_Ticks_Per_Rev;
-	uint8_t enc_val = 0;
-	enc_val = enc_val << 2; // shift the previous state to the left
-	enc_val = enc_val | ((PIND & 0b1100) >> 2); // or the current state into the 2 rightmost bits
-	int8_t encoder_direction = encoder_table[enc_val & 0b1111];    // preform the table lookup and increment count accordingly
-	extern_encoder__enc_count += encoder_direction;
-	
-	if (extern_encoder__enc_count == 0)
-	extern_encoder__enc_count = enc_ticks_per_rev;
-	else if (extern_encoder__enc_count >enc_ticks_per_rev)
-	extern_encoder__enc_count = 1;
-	
-	//So long as the timer remains enabled we can track rpm.
-	enc_ticks_at_current_time++;
 }
 
 void HardwareAbstractionLayer::Encoder::read_chz()
 {
-	//uint32_t enc_ticks_per_rev = Spin::Configuration::Drive_Settings.Encoder_Config.Encoder_Ticks_Per_Rev;
-	uint8_t enc_val = 0;
-	enc_val = enc_val << 2; // shift the previous state to the left
-	enc_val = enc_val | ((PIND & 0b1100) >> 2); // or the current state into the 2 rightmost bits
-	int8_t encoder_direction = encoder_table[enc_val & 0b1111];    // preform the table lookup and increment count accordingly
-	extern_encoder__enc_count += encoder_direction;
-	
-	if (extern_encoder__enc_count == 0)
-	extern_encoder__enc_count = enc_ticks_per_rev;
-	else if (extern_encoder__enc_count >enc_ticks_per_rev)
-	extern_encoder__enc_count = 1;
-	
-	//So long as the timer remains enabled we can track rpm.
-	enc_ticks_at_current_time++;
 }
 
 void HardwareAbstractionLayer::Encoder::read_quad()
 {
+	//UDR0='c';
 	//uint32_t enc_ticks_per_rev = Spin::Configuration::Drive_Settings.Encoder_Config.Encoder_Ticks_Per_Rev;
-	uint8_t enc_val = 0;
+	
 	enc_val = enc_val << 2; // shift the previous state to the left
 	enc_val = enc_val | ((PIND & 0b1100) >> 2); // or the current state into the 2 rightmost bits
 	extern_encoder__direction = encoder_table[enc_val & 0b1111];    // preform the table lookup and increment count accordingly
-	extern_encoder__enc_count += extern_encoder__direction;
+	extern_encoder__count += extern_encoder__direction;
 	
-	if (extern_encoder__enc_count == 0)
-	extern_encoder__enc_count = enc_ticks_per_rev;
-	else if (extern_encoder__enc_count >enc_ticks_per_rev)
-	extern_encoder__enc_count = 1;
+	if (extern_encoder__count == 0)
+	extern_encoder__count = extern_encoder__ticks_per_rev;
+	else if (extern_encoder__count >extern_encoder__ticks_per_rev)
+	extern_encoder__count = 1;
+	
 	
 	//So long as the timer remains enabled we can track rpm.
 	enc_ticks_at_current_time++;

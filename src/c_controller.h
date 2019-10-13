@@ -28,8 +28,8 @@ namespace Spin
 		
 		
 		static c_Serial host_serial;
-		static uint8_t pid_interval;
-		static uint8_t one_interval;
+		//static uint8_t pid_interval;
+		//static uint8_t one_interval;
 		protected:
 		private:
 

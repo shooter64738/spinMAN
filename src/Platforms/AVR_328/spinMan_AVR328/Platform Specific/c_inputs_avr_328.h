@@ -36,8 +36,8 @@ namespace HardwareAbstractionLayer
 		static void configure_encoder_quadrature();
 		static void synch_hardware_inputs();
 		static void synch_hardware_inputs(uint8_t current);
-		static uint8_t get_intervals();
-		static void check_intervals();
+		//static uint8_t get_intervals();
+		//static void check_intervals();
 		static uint8_t get_encoder_active();
 		static void update_encoder_for_quad();
 	};

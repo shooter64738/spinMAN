@@ -11,6 +11,7 @@
 #include "c_output.h"
 #include "c_configuration.h"
 #include "c_enumerations.h"
+#include "bit_manipulation.h"
 
 
 //#define DEBUG_AVR
@@ -22,10 +23,10 @@
 
 c_Serial Spin::Controller::host_serial;
 
-uint8_t Spin::Controller::pid_interval = 0;
-uint8_t Spin::Controller::one_interval = 0;
+//uint8_t Spin::Controller::pid_interval = 0;
+//uint8_t Spin::Controller::one_interval = 0;
 static uint16_t user_pos = 0;
-
+static int32_t error_amount = 0;
 void Spin::Controller::initialize()
 {
 	Spin::Controller::host_serial = c_Serial(0, 115200);//<-- Start serial at 115,200 baud on port 0
@@ -38,6 +39,8 @@ void Spin::Controller::initialize()
 	Spin::Input::initialize();
 	Spin::Output::initialize();
 	Spin::Controller::sync_out_in_control();
+	//set the direction specified by the input pins
+	Spin::Output::set_direction(Spin::Input::Controls.direction);
 	
 
 }
@@ -53,8 +56,8 @@ void Spin::Controller::calibrate()
 		//HardwareAbstractionLayer::Inputs::synch_hardware_inputs();
 		HardwareAbstractionLayer::Inputs::synch_hardware_inputs(); //<--Get updated control inputs
 		Spin::Controller::sync_out_in_control(); //<--synch input controls with output controls.
-		HardwareAbstractionLayer::Inputs::check_intervals(); //<--See which intervals have a time match
-		Spin::Input::Controls.sensed_position = HardwareAbstractionLayer::Encoder::get_position();
+		//HardwareAbstractionLayer::Inputs::check_intervals(); //<--See which intervals have a time match
+		Spin::Input::Controls.sensed_position = extern_encoder__count;
 		Spin::Controller::check_pid_cycle();//<--check if pid time has expired, and update if needed
 		Spin::Controller::process();
 	}
@@ -63,42 +66,15 @@ void Spin::Controller::calibrate()
 
 void Spin::Controller::run()
 {
-	Spin::Configuration::auto_config("Encoder\0");
-	while (1)
-	{
-		Spin::Configuration::auto_config("Encoder\0");
-		Spin::Controller::host_serial.print_string("done");
-	}
-	
-	
-	Spin::Controller::calibrate();
-	//
-	//HardwareAbstractionLayer::Outputs::enable_output();
-	//HardwareAbstractionLayer::Outputs::update_output(238); //238 = 83 rpm
-	//HardwareAbstractionLayer::Outputs::set_direction(1);
-	//while(1)
-	//{
-	//
-	//}
-	//
-
-	#ifdef DEBUG_WIN32
-	//!!!ONLY USE THESE DEFAULTS FOR PROGRAM TESTING!!!
-	//This defaults the drive to enbled
-	Spin::Input::Controls.enable = Spin::Enums::e_drive_states::Enabled;
-	Spin::Input::Controls.in_mode = Spin::Enums::e_drive_modes::Position;
-	//This defaults the mode to velocity
-	HardwareAbstractionLayer::Inputs::start_wave_read();
-	#endif
-	HardwareAbstractionLayer::Outputs::set_direction(Enums::Forward);
-
 
 	while (1)
 	{
 
 		Spin::Controller::sync_out_in_control();//<--critical that we check this often
 		HardwareAbstractionLayer::Inputs::synch_hardware_inputs();
-		HardwareAbstractionLayer::Inputs::check_intervals(); //<--See which intervals have a time match
+		HardwareAbstractionLayer::Inputs::get_rpm();//<--check rpm, recalculate if its time
+		HardwareAbstractionLayer::Inputs::get_set_point();//<--get set point if its time
+		Spin::Input::Controls.sensed_position = extern_encoder__count;
 		Spin::Controller::check_pid_cycle();//<--check if pid time has expired, and update if needed
 
 		Spin::Controller::process();//<--General processing. Perhaps an LCD update
@@ -117,11 +93,6 @@ void Spin::Controller::sync_out_in_control()
 		{
 			Spin::Output::set_direction(Enums::e_directions::Free);
 		}
-		else
-		{
-			Spin::Output::set_direction(Spin::Input::Controls.direction);
-		}
-
 		Spin::Output::set_drive_state(Spin::Input::Controls.enable);
 	}
 
@@ -134,10 +105,77 @@ void Spin::Controller::sync_out_in_control()
 	//Spin::Output::set_pid_values();
 	//set the output mode to the mode specified by input
 	Spin::Output::set_mode(Spin::Input::Controls.in_mode);
-	//set the direction specified by the input pins
-	Spin::Output::set_direction(Spin::Input::Controls.direction);
+	
 	//update input value
 	Spin::Input::Controls.step_counter = user_pos;
+
+}
+
+void Spin::Controller::check_pid_cycle()
+{
+
+	if (!BitTst(extern_input__intervals,PID_INTERVAL_BIT))
+	return;//<--return if its not time
+	
+	BitClr_(extern_input__intervals,PID_INTERVAL_BIT);//<--clear this bit because we are running the pid loop
+	
+	if ( Spin::Input::Controls.enable == Enums::e_drive_states::Enabled) //<--is drive enabled
+	{
+		//calculate the change for the mode we are in
+		switch (Spin::Output::Controls.out_mode)
+		{
+			case Enums::e_drive_modes::Velocity:
+			{
+				//set the direction specified by the input pins
+				Spin::Output::set_direction(Spin::Input::Controls.direction);
+				Spin::Output::active_pid_mode->get_pid(Spin::Input::Controls.step_counter, Spin::Input::Controls.sensed_rpm);
+				break;
+			}
+			case Enums::e_drive_modes::Position:
+			{
+				//figure out which direction is closer!
+
+				Spin::Input::Controls.step_counter = user_pos;
+				error_amount = ((int32_t)Spin::Input::Controls.step_counter - Spin::Input::Controls.sensed_position);
+				if (((int32_t)Spin::Input::Controls.step_counter - Spin::Input::Controls.sensed_position) < 0)
+				{
+					//changing direction will be a shorter path to the target
+					Spin::Output::active_pid_mode->control_direction = Enums::e_directions::Reverse;
+					//if we have changed directions reset the integral, or we have to wait for it to unwind
+					//TODO: Cannot change direction after motion starts. Mst set this before we start moving.
+					Spin::Output::active_pid_mode->reset_integral();
+				}
+				else if (((int32_t)Spin::Input::Controls.step_counter - Spin::Input::Controls.sensed_position) > 0)
+				{
+					//changing direction will be a shorter path to the target
+					Spin::Output::active_pid_mode->control_direction = Enums::e_directions::Forward;
+					//if we have changed directions reset the integral, or we have to wait for it to unwind
+					//TODO: Cannot change direction after motion starts. Mst set this before we start moving.
+					Spin::Output::active_pid_mode->reset_integral();
+				}
+
+				//this is too touchy for PWM with interference. Hard setting a position value for testing
+				Spin::Output::active_pid_mode->get_pid(Spin::Input::Controls.step_counter, Spin::Input::Controls.sensed_position);
+
+				//in position mode pid can return a + or - value.
+				//the direction flag should already be set.
+				Spin::Output::set_direction(Spin::Output::active_pid_mode->control_direction);
+				
+				break;
+			}
+			default:
+			/* Your code here */
+			break;
+		}
+		if (Spin::Output::active_pid_mode != NULL)
+		HardwareAbstractionLayer::Outputs::update_output(abs(Spin::Output::active_pid_mode->pid_calc.output));
+	}
+	else
+	{
+		#ifdef DEBUG_AVR
+		Spin::Controller::host_serial.print_string(" pid not active\r\n");
+		#endif
+	}
 
 }
 
@@ -145,22 +183,32 @@ void Spin::Controller::process()
 {
 
 
-	//if (Spin::Controller::one_interval) //<--one second interval for general purpose reporting
+	//if (BitTst(extern_input__intervals, RPT_INTERVAL_BIT)) //<--one second interval for general purpose reporting
 	{
-		Spin::Controller::one_interval = 0;
+		BitClr_(extern_input__intervals, RPT_INTERVAL_BIT);
 
 		Spin::Controller::host_serial.print_string(" mod:");
 		Spin::Controller::host_serial.print_int32(Spin::Input::Controls.in_mode);
 		Spin::Controller::host_serial.print_string(" ena:");
 		Spin::Controller::host_serial.print_int32(Spin::Input::Controls.enable);
 		Spin::Controller::host_serial.print_string(" rpm:");
-		Spin::Controller::host_serial.print_int32(Spin::Input::Controls.sensed_rpm);
+		//Spin::Controller::host_serial.print_int32(Spin::Input::Controls.sensed_rpm);
+		Spin::Controller::host_serial.print_int32(0);
 		Spin::Controller::host_serial.print_string(" pos:");
 		Spin::Controller::host_serial.print_int32(Spin::Input::Controls.sensed_position);
-		Spin::Controller::host_serial.print_string(" stp:");
+		Spin::Controller::host_serial.print_string(" trg:");
 		Spin::Controller::host_serial.print_int32(Spin::Input::Controls.step_counter);
+		Spin::Controller::host_serial.print_string(" err:");
+		Spin::Controller::host_serial.print_int32(error_amount);
 		
-
+		
+		if (Spin::Output::active_pid_mode !=NULL)
+		{
+			Spin::Controller::host_serial.print_string(" p_pid:");
+			Spin::Controller::host_serial.print_int32(Spin::Output::active_pid_mode->pid_calc.output);
+			Spin::Controller::host_serial.print_string(" dir:");
+			Spin::Controller::host_serial.print_int32((int)Spin::Output::active_pid_mode->control_direction);
+		}
 
 		if (Spin::Controller::host_serial.HasEOL())
 		{
@@ -219,68 +267,5 @@ void Spin::Controller::process()
 
 	}
 
-
-}
-
-void Spin::Controller::check_pid_cycle()
-{
-
-	if (Spin::Controller::pid_interval && Spin::Input::Controls.enable == Enums::e_drive_states::Enabled) //<--is it time to calculate PID again?
-	{
-
-		Spin::Controller::pid_interval = 0;
-
-
-		//calculate the change
-		switch (Spin::Output::Controls.out_mode)
-		{
-			case Enums::e_drive_modes::Velocity:
-			{
-				
-				
-				Spin::Output::active_pid_mode->get_pid(Spin::Input::Controls.step_counter, Spin::Input::Controls.sensed_rpm);
-				Spin::Controller::host_serial.print_string(" v_pid:");
-				Spin::Controller::host_serial.print_int32(Spin::Output::active_pid_mode->pid_calc.output);
-				break;
-			}
-			case Enums::e_drive_modes::Position:
-			{
-				//figure out which direction is closer!
-
-				Spin::Input::Controls.step_counter = user_pos;
-				if (((int32_t)Spin::Input::Controls.step_counter - Spin::Input::Controls.sensed_position) < 0)
-				{
-					//changing direction will be a shorter path to the target
-					//Spin::Output::active_pid_mode->control_direction = Reverse;
-					//if we have changed directions reset the integral, or we have to wait for it to unwind
-					//TODO: Cannot change direction after motion starts. Mst set this before we start moving.
-					Spin::Output::active_pid_mode->reset_integral();
-				}
-
-				//this is too touchy for PWM with interference. Hard setting a position value for testing
-				Spin::Output::active_pid_mode->get_pid(Spin::Input::Controls.step_counter, Spin::Input::Controls.sensed_position);
-
-				//in position mode pid can return a + or - value.
-				//the direction flag should already be set.
-				Spin::Output::set_direction(Spin::Output::active_pid_mode->control_direction);
-				Spin::Controller::host_serial.print_string(" p_pid:");
-				Spin::Controller::host_serial.print_int32(Spin::Output::active_pid_mode->pid_calc.output);
-				Spin::Controller::host_serial.print_string(" dir:");
-				Spin::Controller::host_serial.print_int32((int)Spin::Output::active_pid_mode->control_direction);
-				break;
-			}
-			default:
-			/* Your code here */
-			break;
-		}
-		if (Spin::Output::active_pid_mode != NULL)
-		HardwareAbstractionLayer::Outputs::update_output(abs(Spin::Output::active_pid_mode->pid_calc.output));
-	}
-	else
-	{
-		#ifdef DEBUG_AVR
-		Spin::Controller::host_serial.print_string(" pid not active\r\n");
-		#endif
-	}
 
 }
