@@ -7,6 +7,13 @@
 #define __INPUT_VOLATILES__
 #include "volatile_input_externs.h"
 
+volatile uint32_t local_overflow_accumulator = 0;
+
+#define IN_TCCRA TCCR0A
+#define IN_TCCRB TCCR0B
+#define IN_TCNT TCNT0
+#define IN_TIFR TIFR0
+#define IN_TOV TOV0
 
 void HardwareAbstractionLayer::Inputs::get_rpm()
 {
@@ -38,7 +45,7 @@ void HardwareAbstractionLayer::Inputs::get_set_point()
 	BitClr_(extern_input__intervals,ONE_INTERVAL_BIT);
 	
 	//find factor of frequency tick over time.
-	float f_req_value = ((float)_ref_timer_count / (SET_GATE_TIME_MS/MILLISECONDS_PER_SECOND));
+	float f_req_value = ((float)extern_input__time_count / (SET_GATE_TIME_MS/MILLISECONDS_PER_SECOND));
 	Spin::Input::Controls.step_counter = f_req_value;
 	
 	
@@ -46,7 +53,27 @@ void HardwareAbstractionLayer::Inputs::get_set_point()
 
 void HardwareAbstractionLayer::Inputs::initialize()
 {
-		
+	
+}
+
+void HardwareAbstractionLayer::Inputs::configure_signal_input_timer()
+{
+	//Setup timer 1 as a simple counter
+	IN_TCCRA = 0;	IN_TCCRB = 0;	IN_TCNT = 0;
+	IN_TCCRB |= (1 << CS12) | (1 << CS11) | (1 << CS10);
+	// Turn on the counter, Clock on Rise
+}
+
+void HardwareAbstractionLayer::Inputs::configure_interval_timer()
+{
+	//Setup timer 2 as a timer for 1000ms
+	TCCR2A=0; TCCR2B=0; TCNT2=0;
+	TCCR2B = TIMER_PRESCALE_MASK;//(1<<CS22) | (1<<CS20);  // set prescale factor of counter2 to 128 (16MHz/128 = 125000Hz)
+	// by setting CS22=1, CS21=0, CS20=1
+	TCCR2A = (1<<WGM21);
+	OCR2A = ((F_CPU / PRE_SCALER) / TIMER_FRQ_HZ) - 1; //249; //124                     // CTC divider will divide 125Kz by 125
+	GTCCR |= (1<<PSRASY);
+	TIMSK2 = (1<<OCIE2A);
 }
 
 void HardwareAbstractionLayer::Inputs::configure()
@@ -57,19 +84,9 @@ void HardwareAbstractionLayer::Inputs::configure()
 	//enable pull up
 	STEP_PORT |= (1<<PORTD5);// | (1<<PORTD4);
 	
-	//Setup timer 1 as a simple counter
-	TCCR1A = 0;	TCCR1B = 0;	TCNT1 = 0;
-	TCCR1B |= (1 << CS12) | (1 << CS11) | (1 << CS10);
-	// Turn on the counter, Clock on Rise
+	HardwareAbstractionLayer::Inputs::configure_signal_input_timer();
 	
-	//Setup timer 2 as a timer for 1000ms
-	TCCR2A=0; TCCR2B=0; TCNT2=0;
-	TCCR2B = TIMER_PRESCALE_MASK;//(1<<CS22) | (1<<CS20);  // set prescale factor of counter2 to 128 (16MHz/128 = 125000Hz)
-	// by setting CS22=1, CS21=0, CS20=1
-	TCCR2A = (1<<WGM21);
-	OCR2A = ((F_CPU / PRE_SCALER) / TIMER_FRQ_HZ) - 1; //249; //124                     // CTC divider will divide 125Kz by 125
-	GTCCR |= (1<<PSRASY);
-	TIMSK2 = (1<<OCIE2A);
+	HardwareAbstractionLayer::Inputs::configure_interval_timer();
 	
 	//Set pins on port for inputs
 	CONTROl_PORT_DIRECTION &= ~((1 << DDB0) | (1 << DDB1) | (1 << DDB2));
@@ -125,34 +142,6 @@ void HardwareAbstractionLayer::Inputs::synch_hardware_inputs(uint8_t current)
 	Spin::Input::Controls.enable = (Spin::Enums::e_drive_states)BitTst(current, ENABLE_PIN);
 	Spin::Input::Controls.direction = (Spin::Enums::e_directions)BitTst(current, DIRECTION_PIN);
 }
-//
-//uint8_t HardwareAbstractionLayer::Inputs::get_intervals()
-//{
-	//uint8_t _intervals = extern_input__intervals;
-	//extern_input__intervals = 0;
-	//return _intervals;
-//}
-//
-//void HardwareAbstractionLayer::Inputs::check_intervals()
-//{
-	//uint8_t _intervals = extern_input__intervals;
-//
-	//Spin::Controller::one_interval = BitTst(_intervals,ONE_INTERVAL_BIT);
-	//Spin::Controller::pid_interval = BitTst(_intervals,PID_INTERVAL_BIT);
-	//
-	//if (BitTst(extern_input__intervals,RPM_INTERVAL_BIT))
-	//HardwareAbstractionLayer::Inputs::get_rpm();
-	//
-	//if (Spin::Controller::one_interval)
-	//{
-		//HardwareAbstractionLayer::Inputs::get_set_point();
-	//}
-	//
-	//
-//}
-
-
-
 
 ISR (PCINT0_vect)
 {
@@ -164,6 +153,12 @@ ISR (PCINT0_vect)
 //This timer ticks every 1ms. 1000 of these is 1 second
 ISR(TIMER2_COMPA_vect)
 {
+	if (BitTst(IN_TIFR,IN_TOV))
+	{
+		(BitSet_(IN_TIFR,IN_TOV));//<--clear over flow
+		local_overflow_accumulator += 256;	//<--add overflow & current count
+	}
+	sei();
 	//Ive stripped this ISR down to the bare minimum. It seems to run fast enough to read a 2mhz signal reliably.
 	if (pid_count_ticks >= PID_GATE_TIME_MS)
 	{
@@ -180,14 +175,14 @@ ISR(TIMER2_COMPA_vect)
 
 	if (tmr_count_ticks >= SET_GATE_TIME_MS)
 	{
-		_ref_timer_count = TCNT1;
-		//Leave timers enabled, just reset the counters for them
-		TCNT1 = 0;//<-- clear the counter for freq read (desired rpm)
-		//TIMER_2.TCNT = 0;//<-- clear the counter for time keeping
-		//tmr_count_ticks = 0;//	<--reset this to 0, but we will count this as a tick
 		tmr_count_ticks = 0;
+		
 		extern_input__intervals |=(1<<ONE_INTERVAL_BIT);//<--flag that 1 second has passed
 		extern_input__intervals |=(1<<RPT_INTERVAL_BIT);//<--flag that its time to report
+		
+		extern_input__time_count = IN_TCNT + local_overflow_accumulator;
+		IN_TCNT = 0;//<-- clear the counter for freq read (desired rpm)
+		local_overflow_accumulator = 0;
 	}
 
 	tmr_count_ticks++;

@@ -2,18 +2,24 @@
 #include "..\..\..\..\c_enumerations.h"
 #include "..\..\..\..\c_configuration.h"
 
+#define OUT_TCCRA TCCR1A
+#define OUT_TCCRB TCCR1B
+#define OUT_OCR	 OCR1A
 
 void HardwareAbstractionLayer::Outputs::initialize()
 {
-	OCR0A = 255;
-	TCCR0A |= (1 << COM0A1);
-	TCCR0A |= (1 << WGM01) | (1 << WGM00);
 	
+	HardwareAbstractionLayer::Outputs::configure_pwm_output_timer();
 	
 	DIRECTION_PORT_DIRECTION |= (1<<FORWARD_PIN) | (1<<REVERSE_PIN);
 	DIRECTION_PORT |= (1<<PORTB5) | (1<<PORTB4);
-	
+}
 
+void HardwareAbstractionLayer::Outputs::configure_pwm_output_timer()
+{
+	OUT_OCR = 255;
+	OUT_TCCRA |= (1 << COM0A1);
+	OUT_TCCRA |= (1 << WGM01) | (1 << WGM00);
 }
 
 void HardwareAbstractionLayer::Outputs::set_direction(Spin::Enums::e_directions direction )
@@ -39,18 +45,18 @@ void HardwareAbstractionLayer::Outputs::set_direction(Spin::Enums::e_directions 
 void HardwareAbstractionLayer::Outputs::disable_output()
 {
 	//disable pwm output
-	TCCR0B = 0;
-	OCR0A = Spin::Configuration::Drive_Settings.Drive_Turn_Off_Value;
+	OUT_TCCRB = 0;
+	OUT_OCR = Spin::Configuration::Drive_Settings.Drive_Turn_Off_Value;
 }
 
 void HardwareAbstractionLayer::Outputs::enable_output()
 {
 	//enable pwm output
 	DDRD |= (1<<PWM_OUTPUT_PIN);
-	TCCR0B |= (1 << CS00);
+	OUT_TCCRB |= (1 << CS00);
 }
 
 void HardwareAbstractionLayer::Outputs::update_output(uint16_t value)
 {
-	OCR0A = value;
+	OUT_OCR = value;
 }

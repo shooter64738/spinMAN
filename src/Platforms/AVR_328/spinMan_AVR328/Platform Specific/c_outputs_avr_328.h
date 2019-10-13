@@ -23,6 +23,7 @@ namespace HardwareAbstractionLayer
 		public:
 		
 		static void initialize();
+		static void configure_pwm_output_timer();
 		static void set_direction(Spin::Enums::e_directions direction);
 		static void enable_output();
 		static void update_output(uint16_t value);

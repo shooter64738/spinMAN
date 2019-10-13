@@ -15,8 +15,7 @@
 #define STEP_PORT PORTD
 #define STEP_PORT_DIRECTION DDRD
 #define STEP_PORT_PIN_ADDRESS PIND
-#define STEP_PIN PIND7			//Nano pin D7
-#define STEP_PIN_ON_TIMER PIND5			//Nano pin D5
+#define STEP_PIN_ON_TIMER PIND4			//Nano pin D5
 
 
 
@@ -29,6 +28,8 @@ namespace HardwareAbstractionLayer
 		static void get_rpm();
 		static void get_set_point();
 		static void initialize();
+		static void configure_signal_input_timer();
+		static void configure_interval_timer();
 		static void configure();
 		static void configure_encoder_z_index();
 		static void configure_encoder_simple_int_a();

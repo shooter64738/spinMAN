@@ -75,6 +75,7 @@ void Spin::Controller::run()
 		HardwareAbstractionLayer::Inputs::get_rpm();//<--check rpm, recalculate if its time
 		HardwareAbstractionLayer::Inputs::get_set_point();//<--get set point if its time
 		Spin::Input::Controls.sensed_position = extern_encoder__count;
+		Spin::Input::Controls.step_counter = extern_input__time_count;
 		Spin::Controller::check_pid_cycle();//<--check if pid time has expired, and update if needed
 
 		Spin::Controller::process();//<--General processing. Perhaps an LCD update
@@ -197,7 +198,7 @@ void Spin::Controller::process()
 		Spin::Controller::host_serial.print_string(" pos:");
 		Spin::Controller::host_serial.print_int32(Spin::Input::Controls.sensed_position);
 		Spin::Controller::host_serial.print_string(" trg:");
-		Spin::Controller::host_serial.print_int32(Spin::Input::Controls.step_counter);
+		Spin::Controller::host_serial.print_int32(extern_input__time_count);
 		Spin::Controller::host_serial.print_string(" err:");
 		Spin::Controller::host_serial.print_int32(error_amount);
 		
