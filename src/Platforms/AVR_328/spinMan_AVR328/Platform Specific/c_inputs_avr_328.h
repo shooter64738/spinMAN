@@ -4,20 +4,21 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 
-#define CONTROl_PORT PORTB
-#define CONTROl_PORT_DIRECTION DDRB
-#define CONTROL_PORT_PIN_ADDRESS PINB
-#define DIRECTION_PIN PINB0	//Nano pin D8
-#define MODE_PIN_A PINB1			//Nano pin D9
-#define MODE_PIN_B PINB2			//Nano pin D10
-#define ENABLE_PIN PINB3		//Nano pin D11
 
-#define STEP_PORT PORTD
-#define STEP_PORT_DIRECTION DDRD
-#define STEP_PORT_PIN_ADDRESS PIND
-#define STEP_PIN_ON_TIMER PIND4			//Nano pin D5
+#define IN_TCCRA TCCR0A
+#define IN_TCCRB TCCR0B
+#define IN_TCNT TCNT0
+#define IN_TIFR TIFR0
+#define IN_TOV TOV0
 
 
+#define CONTROl_PORT PORTC
+#define CONTROl_PORT_DIRECTION DDRC
+#define CONTROL_PORT_PIN_ADDRESS PINC
+#define DIRECTION_PIN PINC0	//Nano pin A0
+#define MODE_PIN_A PINC1    //Nano pin A1
+#define MODE_PIN_B PINC2    //Nano pin A2
+#define ENABLE_PIN PINC3    //Nano pin A3
 
 namespace HardwareAbstractionLayer
 {

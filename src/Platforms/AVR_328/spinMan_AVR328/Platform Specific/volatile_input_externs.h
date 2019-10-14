@@ -1,5 +1,5 @@
 
-#include <stdint-gcc.h>
+#include <stdint.h>
 //I just learned this nifty macro trick for externs.. im trying it out to see if i like this coding style..
 #ifdef __INPUT_VOLATILES__
 	//Whatever cpp defines __ENCODER_VOALTILES__ AND includes this .h file will have veriables defined as below:

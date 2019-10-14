@@ -164,16 +164,16 @@ ISR(INT1_vect)
 	//HardwareAbstractionLayer::Inputs::update_encoder_for_quad();
 }
 
-ISR (PCINT1_vect)
-{
-	uint8_t current = PIND ;
-	
-	
-	Platform_Specific_HAL_Encoder_Vector_Z();
-	
-	if (current & INDEX_PIN)
-	{
-		//extern_encoder__active_channels |= ENC_CHZ_TRK_BIT;
-	}
-	
-}
+//ISR (PCINT1_vect)
+//{
+	//uint8_t current = PIND ;
+	//
+	//
+	//Platform_Specific_HAL_Encoder_Vector_Z();
+	//
+	//if (current & INDEX_PIN)
+	//{
+		////extern_encoder__active_channels |= ENC_CHZ_TRK_BIT;
+	//}
+	//
+//}

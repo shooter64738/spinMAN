@@ -1,5 +1,5 @@
 
-#include <stdint-gcc.h>
+#include <stdint.h>
 #include "c_encoder_avr_328.h"
 //I just learned this nifty macro trick for externs.. im trying it out to see if i like this coding style..
 #ifdef __ENCODER_VOLATILES__

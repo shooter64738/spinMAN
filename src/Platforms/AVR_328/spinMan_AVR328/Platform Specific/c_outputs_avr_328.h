@@ -7,7 +7,10 @@
 
 //#include "../../../../c_controller.h"
 
-#define PWM_OUTPUT_PIN PD6 //(pin 6 )
+//#define PWM_OUTPUT_PIN PD6 //(pin 6 )
+#define PWM_OUTPUT_PIN PB1 //(pin 9 )
+#define PWM_DIR_PORT DDRB
+#define PWM_DIR_PORT_ID DDB1
 #define RPM_REFERNCE_PIN 0// PD6 //(pin 6 )
 
 #define DIRECTION_PORT PORTB

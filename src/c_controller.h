@@ -21,9 +21,9 @@ namespace Spin
 		public:
 		//enum e_control_flags
 		//{
-			//Enable_Disbale = 0,
-			//Mode = 1,
-			//Direction = 2
+		//Enable_Disbale = 0,
+		//Mode = 1,
+		//Direction = 2
 		//};
 		
 		
@@ -36,6 +36,7 @@ namespace Spin
 		//functions
 		public:
 		static void initialize();
+		static void simple();
 		static void calibrate();
 		static void run();
 		static void sync_out_in_control();

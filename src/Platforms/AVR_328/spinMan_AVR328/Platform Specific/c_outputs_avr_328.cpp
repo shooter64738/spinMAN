@@ -1,5 +1,4 @@
 #include "c_outputs_avr_328.h"
-#include "..\..\..\..\c_enumerations.h"
 #include "..\..\..\..\c_configuration.h"
 
 #define OUT_TCCRA TCCR1A
@@ -17,9 +16,21 @@ void HardwareAbstractionLayer::Outputs::initialize()
 
 void HardwareAbstractionLayer::Outputs::configure_pwm_output_timer()
 {
-	OUT_OCR = 255;
-	OUT_TCCRA |= (1 << COM0A1);
-	OUT_TCCRA |= (1 << WGM01) | (1 << WGM00);
+	//enable pwm output
+	PWM_DIR_PORT |= (1<<PWM_DIR_PORT_ID);
+	
+	ICR1 = 65535;
+	OUT_OCR = Spin::Configuration::Drive_Settings.Drive_Turn_Off_Value;
+	
+	OUT_TCCRA = (1 << COM1A1)|(1 << COM1B1);
+	
+	OUT_TCCRA |= (1 << WGM11);
+	OUT_TCCRB |= (1 << WGM12)|(1 << WGM13);
+	// set Fast PWM mode using ICR1 as TOP
+	
+	//TCCR1B |= (1 << CS10);
+	// START the timer with no prescaler
+	
 }
 
 void HardwareAbstractionLayer::Outputs::set_direction(Spin::Enums::e_directions direction )
@@ -45,15 +56,14 @@ void HardwareAbstractionLayer::Outputs::set_direction(Spin::Enums::e_directions 
 void HardwareAbstractionLayer::Outputs::disable_output()
 {
 	//disable pwm output
-	OUT_TCCRB = 0;
+	OUT_TCCRB &= ~(1 << CS10);
 	OUT_OCR = Spin::Configuration::Drive_Settings.Drive_Turn_Off_Value;
 }
 
 void HardwareAbstractionLayer::Outputs::enable_output()
 {
-	//enable pwm output
-	DDRD |= (1<<PWM_OUTPUT_PIN);
-	OUT_TCCRB |= (1 << CS00);
+	
+	OUT_TCCRB |= (1 << CS10);
 }
 
 void HardwareAbstractionLayer::Outputs::update_output(uint16_t value)

@@ -9,12 +9,6 @@
 
 volatile uint32_t local_overflow_accumulator = 0;
 
-#define IN_TCCRA TCCR0A
-#define IN_TCCRB TCCR0B
-#define IN_TCNT TCNT0
-#define IN_TIFR TIFR0
-#define IN_TOV TOV0
-
 void HardwareAbstractionLayer::Inputs::get_rpm()
 {
 	if (!BitTst(extern_input__intervals,RPM_INTERVAL_BIT))
@@ -45,8 +39,8 @@ void HardwareAbstractionLayer::Inputs::get_set_point()
 	BitClr_(extern_input__intervals,ONE_INTERVAL_BIT);
 	
 	//find factor of frequency tick over time.
-	float f_req_value = ((float)extern_input__time_count / (SET_GATE_TIME_MS/MILLISECONDS_PER_SECOND));
-	Spin::Input::Controls.step_counter = f_req_value;
+	//float f_req_value = ((float)extern_input__time_count / (SET_GATE_TIME_MS/MILLISECONDS_PER_SECOND));
+	//Spin::Input::Controls.step_counter = f_req_value;
 	
 	
 }
@@ -80,46 +74,22 @@ void HardwareAbstractionLayer::Inputs::configure()
 {
 	//Pin D5 (PIND5) is connected to timer1 count. We use that as a hardware counter
 	//set pin to input
-	STEP_PORT_DIRECTION &= ~((1 << DDD5));//| (1<<DDD4));
-	//enable pull up
-	STEP_PORT |= (1<<PORTD5);// | (1<<PORTD4);
+	//STEP_PORT_DIRECTION &= ~((1 << DDD5));//| (1<<DDD4));
+	////enable pull up
+	//STEP_PORT |= (1<<PORTD5);// | (1<<PORTD4);
 	
 	HardwareAbstractionLayer::Inputs::configure_signal_input_timer();
-	
 	HardwareAbstractionLayer::Inputs::configure_interval_timer();
-	
 	//Set pins on port for inputs
-	CONTROl_PORT_DIRECTION &= ~((1 << DDB0) | (1 << DDB1) | (1 << DDB2));
+	CONTROl_PORT_DIRECTION &= ~((1 << DIRECTION_PIN) | (1 << MODE_PIN_A) | (1 << MODE_PIN_B) | (1<<ENABLE_PIN));
 	//Enable pull ups
 	CONTROl_PORT |= (1<<DIRECTION_PIN)|(1<<MODE_PIN_A) |(1<<MODE_PIN_B) |(1<<ENABLE_PIN);
 	//Set the mask to check pins PB0-PB5
-	PCMSK0 = (1<<PCINT0)|(1<<PCINT1)|(1<<PCINT2)|(1<<PCINT3);
+	PCMSK1 = (1<<PCINT8)|(1<<PCINT9)|(1<<PCINT10)|(1<<PCINT11);
 	
-	//Set the interrupt for PORTB (PCIE0)
-	PCICR |= (1<<PCIE0);
-	PCIFR |= (1<<PCIF0);
-	
-	//HardwareAbstractionLayer::Inputs::configure_encoder_quadrature();
-	////Setup encoder capture
-	//DDRD &= ~(1 << DDD2);	//input mode
-	//PORTD |= (1 << PORTD2);	//enable pullup
-	//DDRD &= ~(1 << DDD3);	//input mode
-	//PORTD |= (1 << PORTD3);	//enable pullup
-	//////
-	////Any change triggers
-	//EICRA |= (1 << ISC00);	// Trigger on any change on INT0 PD2 (pin D2)
-	//EICRA |= (1 << ISC10);	// Trigger on any change on INT1 PD3 (pin D3)
-	
-	//EICRA |= (1 << ISC00) | (1 << ISC01);	// Trigger on rising change on INT0
-	//EICRA |= (1 << ISC10) | (1 << ISC11);	// Trigger on rising change on INT1
-	
-	//EICRA |= (1 << ISC01);	// Trigger on falling change on INT0
-	//EICRA |= (1 << ISC11);	// Trigger on falling change on INT1
-	
-	//EICRA |= (1 << ISC01);	// Trigger on hi change on INT0
-	//EICRA |= (1 << ISC11);	// Trigger on hi change on INT1
-	
-	//EIMSK |= (1 << INT0) | (1 << INT1);     // Enable external interrupt INT0, INT1
+	//Set the interrupt for PORTC (PCIE1)
+	PCICR |= (1<<PCIE1);
+	PCIFR |= (1<<PCIF1);
 }
 
 
@@ -136,14 +106,30 @@ void HardwareAbstractionLayer::Inputs::synch_hardware_inputs()
 void HardwareAbstractionLayer::Inputs::synch_hardware_inputs(uint8_t current)
 {
 	//mode is read from 2 pins
-	uint8_t mode_pins = BitTst(current, MODE_PIN_A);
-	mode_pins += BitTst(current, MODE_PIN_B);
+	uint8_t mode_pins = 0;
+	if (BitTst(current, MODE_PIN_A))
+	mode_pins ++;
+	if (BitTst(current, MODE_PIN_B))
+	mode_pins ++;
+	
+	mode_pins++;
 	Spin::Input::Controls.in_mode = (Spin::Enums::e_drive_modes)mode_pins;
-	Spin::Input::Controls.enable = (Spin::Enums::e_drive_states)BitTst(current, ENABLE_PIN);
-	Spin::Input::Controls.direction = (Spin::Enums::e_directions)BitTst(current, DIRECTION_PIN);
+	
+	if (BitTst(current, ENABLE_PIN))
+	Spin::Input::Controls.enable = Spin::Enums::e_drive_states::Enabled;
+	else
+	Spin::Input::Controls.enable = Spin::Enums::e_drive_states::Disabled;
+
+	if (BitTst(current, DIRECTION_PIN))
+	Spin::Input::Controls.direction = Spin::Enums::e_directions::Forward;
+	else
+	Spin::Input::Controls.direction = Spin::Enums::e_directions::Reverse;
+	
+	Spin::Input::Controls.in_mode = (Spin::Enums::e_drive_modes)mode_pins;
+	
 }
 
-ISR (PCINT0_vect)
+ISR (PCINT1_vect)
 {
 	uint8_t current = CONTROL_PORT_PIN_ADDRESS ;
 	HardwareAbstractionLayer::Inputs::synch_hardware_inputs(current);

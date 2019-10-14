@@ -32,41 +32,79 @@ void Spin::Controller::initialize()
 	Spin::Controller::host_serial = c_Serial(0, 115200);//<-- Start serial at 115,200 baud on port 0
 	Spin::Controller::host_serial.print_string("proto type\r\n");//<-- Send hello message
 
+
+
 	//enable interrupts
 	HardwareAbstractionLayer::Core::start_interrupts();
-
+	
 	Spin::Configuration::initiailize();
+	
 	Spin::Input::initialize();
+	
 	Spin::Output::initialize();
+	
+	//Spin::Controller::simple();
+	
 	Spin::Controller::sync_out_in_control();
+	
 	//set the direction specified by the input pins
 	Spin::Output::set_direction(Spin::Input::Controls.direction);
-	
 
 }
 
-void Spin::Controller::calibrate()
+//void Spin::Controller::calibrate()
+//{
+//	Spin::Input::Controls.enable = Spin::Enums::e_drive_states::Enabled;
+//	Spin::Input::Controls.in_mode = Spin::Enums::e_drive_modes::Velocity;
+//	HardwareAbstractionLayer::Outputs::set_direction(Enums::Forward);
+//
+//	while (1)
+//	{
+//		//HardwareAbstractionLayer::Inputs::synch_hardware_inputs();
+//		HardwareAbstractionLayer::Inputs::synch_hardware_inputs(); //<--Get updated control inputs
+//		Spin::Controller::sync_out_in_control(); //<--synch input controls with output controls.
+//		//HardwareAbstractionLayer::Inputs::check_intervals(); //<--See which intervals have a time match
+//		Spin::Input::Controls.sensed_position = extern_encoder__count;
+//		Spin::Controller::check_pid_cycle();//<--check if pid time has expired, and update if needed
+//		Spin::Controller::process();
+//	}
+//
+//}
+
+void Spin::Controller::simple()
 {
-	Spin::Input::Controls.enable = Spin::Enums::e_drive_states::Enabled;
-	Spin::Input::Controls.in_mode = Spin::Enums::e_drive_modes::Velocity;
-	HardwareAbstractionLayer::Outputs::set_direction(Enums::Forward);
-
-	while (1)
-	{
-		//HardwareAbstractionLayer::Inputs::synch_hardware_inputs();
-		HardwareAbstractionLayer::Inputs::synch_hardware_inputs(); //<--Get updated control inputs
-		Spin::Controller::sync_out_in_control(); //<--synch input controls with output controls.
-		//HardwareAbstractionLayer::Inputs::check_intervals(); //<--See which intervals have a time match
-		Spin::Input::Controls.sensed_position = extern_encoder__count;
-		Spin::Controller::check_pid_cycle();//<--check if pid time has expired, and update if needed
-		Spin::Controller::process();
-	}
-
+	//DDRB |= (1 << DDB1);
+	//// PB1 and PB2 is now an output
+	//
+	//ICR1 = 65535;
+	//// set TOP to 16bit
+	//
+	//OCR1A = 65535*.75;
+	//// set PWM for 25% duty cycle @ 16bit
+	//
+	////OCR1B = 0xBFFF;
+	//// set PWM for 75% duty cycle @ 16bit
+	//
+	//TCCR1A |= (1 << COM1A1)|(1 << COM1B1);
+	//// set none-inverting mode
+	//
+	//TCCR1A |= (1 << WGM11);
+	//TCCR1B |= (1 << WGM12)|(1 << WGM13);
+	//// set Fast PWM mode using ICR1 as TOP
+	
+	//TCCR1B |= (1 << CS10);
+	// START the timer with no prescaler
+	while(1){}
 }
 
 void Spin::Controller::run()
 {
-
+	
+	user_pos = 200;
+	
+	Spin::Output::set_drive_state(Spin::Enums::e_drive_states::Enabled);
+	//Spin::Input::Controls.in_mode = Spin::Enums::e_drive_modes::Velocity;
+	HardwareAbstractionLayer::Outputs::update_output(60000);
 	while (1)
 	{
 
@@ -75,7 +113,7 @@ void Spin::Controller::run()
 		HardwareAbstractionLayer::Inputs::get_rpm();//<--check rpm, recalculate if its time
 		HardwareAbstractionLayer::Inputs::get_set_point();//<--get set point if its time
 		Spin::Input::Controls.sensed_position = extern_encoder__count;
-		Spin::Input::Controls.step_counter = extern_input__time_count;
+		//Spin::Input::Controls.step_counter = extern_input__time_count;
 		Spin::Controller::check_pid_cycle();//<--check if pid time has expired, and update if needed
 
 		Spin::Controller::process();//<--General processing. Perhaps an LCD update
@@ -84,32 +122,35 @@ void Spin::Controller::run()
 
 void Spin::Controller::sync_out_in_control()
 {
-	if (Spin::Input::Controls.enable == Spin::Output::Controls.enable)
+	
+	if (Spin::Input::Controls.enable != Spin::Output::Controls.enable)
 	{
 		/*if soft stops are configured (motor free spins to a stop)
 		set both direction pins high and the motor can free wheel to
 		a complete stop
 		*/
-		if (!Spin::Input::Controls.enable && !Spin::Configuration::Drive_Settings.Hard_Stop_On_Disable)
+		if (Spin::Input::Controls.enable == Spin::Enums::e_drive_states::Disabled
+		 && !Spin::Configuration::Drive_Settings.Hard_Stop_On_Disable)
 		{
 			Spin::Output::set_direction(Enums::e_directions::Free);
 		}
-		Spin::Output::set_drive_state(Spin::Input::Controls.enable);
 	}
 
-
-	//Synch output states to input states
-
-	//start/stop pwm output pin, and stop/start pwm signal
-	Spin::Output::set_drive_state(Spin::Input::Controls.enable);
-	////reset the pid variables on state change
-	//Spin::Output::set_pid_values();
-	//set the output mode to the mode specified by input
-	Spin::Output::set_mode(Spin::Input::Controls.in_mode);
+	if (Spin::Input::Controls.in_mode != Spin::Output::Controls.out_mode)
+	{
+		//Set the output mode to the mode specified by input
+		//If mode changes we also need to reset the PID control.
+		//Mode set will do that for us
+		Spin::Output::set_mode(Spin::Input::Controls.in_mode);
+	}
 	
-	//update input value
-	Spin::Input::Controls.step_counter = user_pos;
-
+	//Synch output states to input states
+	if (Spin::Input::Controls.enable != Spin::Output::Controls.enable)
+	{
+		//start/stop pwm output pin, and stop/start pwm signal
+		Spin::Output::set_drive_state(Spin::Input::Controls.enable);
+	}
+	
 }
 
 void Spin::Controller::check_pid_cycle()
@@ -127,6 +168,8 @@ void Spin::Controller::check_pid_cycle()
 		{
 			case Enums::e_drive_modes::Velocity:
 			{
+				//update input value
+				Spin::Input::Controls.step_counter = user_pos;
 				//set the direction specified by the input pins
 				Spin::Output::set_direction(Spin::Input::Controls.direction);
 				Spin::Output::active_pid_mode->get_pid(Spin::Input::Controls.step_counter, Spin::Input::Controls.sensed_rpm);
@@ -170,6 +213,8 @@ void Spin::Controller::check_pid_cycle()
 		}
 		if (Spin::Output::active_pid_mode != NULL)
 		HardwareAbstractionLayer::Outputs::update_output(abs(Spin::Output::active_pid_mode->pid_calc.output));
+		else
+		Spin::Controller::host_serial.print_string(" PID select error\r\n");
 	}
 	else
 	{
@@ -189,16 +234,16 @@ void Spin::Controller::process()
 		BitClr_(extern_input__intervals, RPT_INTERVAL_BIT);
 
 		Spin::Controller::host_serial.print_string(" mod:");
-		Spin::Controller::host_serial.print_int32(Spin::Input::Controls.in_mode);
+		Spin::Controller::host_serial.print_int32((int)Spin::Input::Controls.in_mode);
 		Spin::Controller::host_serial.print_string(" ena:");
-		Spin::Controller::host_serial.print_int32(Spin::Input::Controls.enable);
+		Spin::Controller::host_serial.print_int32((int)Spin::Input::Controls.enable);
 		Spin::Controller::host_serial.print_string(" rpm:");
-		//Spin::Controller::host_serial.print_int32(Spin::Input::Controls.sensed_rpm);
+		Spin::Controller::host_serial.print_int32(Spin::Input::Controls.sensed_rpm);
 		Spin::Controller::host_serial.print_int32(0);
 		Spin::Controller::host_serial.print_string(" pos:");
 		Spin::Controller::host_serial.print_int32(Spin::Input::Controls.sensed_position);
 		Spin::Controller::host_serial.print_string(" trg:");
-		Spin::Controller::host_serial.print_int32(extern_input__time_count);
+		Spin::Controller::host_serial.print_int32(Spin::Input::Controls.step_counter);
 		Spin::Controller::host_serial.print_string(" err:");
 		Spin::Controller::host_serial.print_int32(error_amount);
 		

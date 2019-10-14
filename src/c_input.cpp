@@ -25,7 +25,7 @@ volatile uint8_t step_old_states = 255;
 void Spin::Input::check_input_states()
 {
 	HardwareAbstractionLayer::Inputs::synch_hardware_inputs();
-	Spin::Controller::sync_out_in_control();
+	//Spin::Controller::sync_out_in_control();
 }
 
 

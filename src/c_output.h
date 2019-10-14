@@ -38,7 +38,7 @@ namespace Spin
 		{
 			int32_t kP, kI, kD, proportional, integral, derivative
 			, maxSumError, sumError, preError, MAX_INT;
-			int16_t max, min, maxError;
+			int32_t max, min, maxError;
 			uint8_t invert_output, resolution= 100;
 
 			s_pid_returns pid_calc;
@@ -187,7 +187,7 @@ float f_d = (float)pid_calc->d_term*.1;
 
 				_calculate(setPoint, processValue, &pid_calc);
 				
-				pid_calc.output >>= ((PWM_RESOLUTION_BIT - 1));
+				//pid_calc.output >>= ((PWM_RESOLUTION_BIT - 1));
 				pid_calc.output = _clamp_output(pid_calc.output);
 
 				//if we are in velcotu mode the +/- values mean to speed up or slow down

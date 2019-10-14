@@ -15,14 +15,14 @@ namespace Spin
 	{
 		//variables
 		//public:
-		enum e_config_results
+		enum class e_config_results
 		{
 			Incomplete_Config = 0,
 			Encoder_Not_Available = 1,
 			Encoder_Available = 2,
 		};
 		
-		enum e_encoder_modes
+		enum class e_encoder_modes
 		{
 			No_Encoder = 0,
 			Simple_ChanA = 1,
@@ -34,25 +34,27 @@ namespace Spin
 			Quadrature_wIndex = 7
 		};
 
-		enum e_drive_modes
+		enum class e_drive_modes
 		{
-			Velocity = 0,
-			Position = 1,
-			Torque = 2,
-			Invalid = 3
+			Invalid = 0,
+			Velocity = 1,
+			Position = 2,
+			Torque = 3,
 		};
 
-		enum e_drive_states
+		enum class e_drive_states
 		{
-			Disabled = 0,
-			Enabled = 1
+			Invalid = 0,
+			Disabled = 1,
+			Enabled = 2
 		};
 
-		enum e_directions
+		enum class e_directions
 		{
-			Forward = 0,
-			Reverse = 1,
-			Free = 2
+			Invalid = 0,
+			Forward = 1,
+			Reverse = 2,
+			Free = 3
 		};
 
 		//protected:
