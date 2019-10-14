@@ -13,6 +13,7 @@ namespace HardwareAbstractionLayer
 		static void configure();
 		static void update_encoder();
 		static void synch_hardware_inputs();
+		static void synch_hardware_inputs(uint8_t current);
 		static void start_wave_read();
 		static void HardwareAbstractionLayer::Inputs::timer2_compa_vect_thread();
 		static void check_intervals();

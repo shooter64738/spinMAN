@@ -1,5 +1,6 @@
 #include "c_outputs_win.h"
 
+
 void HardwareAbstractionLayer::Outputs::initialize()
 {
 }
@@ -24,6 +25,6 @@ void HardwareAbstractionLayer::Outputs::update_output(uint16_t value)
 {
 
 }
-void HardwareAbstractionLayer::Outputs::set_direction(uint8_t direction)
+void HardwareAbstractionLayer::Outputs::set_direction(Spin::Enums::e_directions direction)
 {
 }

@@ -3,6 +3,7 @@
 #include "../../../../c_controller.h"
 #include "../../../../c_configuration.h"
 #include "../../../../bit_manipulation.h"
+#include "../../../../bit_manipulation.h"
 #define __INPUT_VOLATILES__
 #include "volatile_input_externs.h"
 
@@ -21,6 +22,11 @@ std::thread HardwareAbstractionLayer::Inputs::timer2_comp_a_thread(HardwareAbstr
 #define CS22 2
 #define WGM21 1
 #define OCIE2A 1
+
+#define DIRECTION_PIN 0	//Nano pin A0
+#define MODE_PIN_A 1    //Nano pin A1
+#define MODE_PIN_B 2    //Nano pin A2
+#define ENABLE_PIN 3    //Nano pin A3
 struct s_timer
 {
 	uint8_t TIMSK;
@@ -34,9 +40,13 @@ static s_timer TIMER_0;
 static s_timer TIMER_1;
 static s_timer TIMER_2;
 
+volatile uint32_t local_overflow_accumulator = 0;
 
 void HardwareAbstractionLayer::Inputs::get_rpm()
 {
+	if (!BitTst(extern_input__intervals, RPM_INTERVAL_BIT))
+		return;//<--return if its not time
+
 	//In velocity mode we only care if the sensed rpm matches the input rpm
 	//In position mode we only care if the sensed position matches the input position.
 
@@ -49,37 +59,55 @@ void HardwareAbstractionLayer::Inputs::get_rpm()
 
 	mean_enc = mean_enc / ENCODER_SUM_ARRAY_SIZE;
 	//doing some scaling up and down trying to avoid float math as much as possible.
-	int32_t rps = ((mean_enc * TIMER_FRQ_HZ) * INV_ENCODER_TICKS_PER_REV * 100 * 60) / 1000;
+	int32_t rps = ((mean_enc * TIMER_FRQ_HZ) * extern_encoder__ticks_per_rev * 100 * 60) / 1000;
 	//multiiply rps *60 to get rpm.
-	Spin::Input::Controls.sensed_rpm = _ref_enc_count;
+	Spin::Input::Controls.sensed_rpm = rps;
 }
 
 
 void HardwareAbstractionLayer::Inputs::get_set_point()
 {
+	if (!BitTst(extern_input__intervals, ONE_INTERVAL_BIT))
+		return;//<--return if its not time
+
 	BitClr_(extern_input__intervals, ONE_INTERVAL_BIT);
+
 	//find factor of frequency tick over time.
-	float f_req_value = ((float)_ref_timer_count / (SET_GATE_TIME_MS / MILLISECONDS_PER_SECOND));
-	Spin::Input::Controls.step_counter = f_req_value;
-}
+	//float f_req_value = ((float)extern_input__time_count / (SET_GATE_TIME_MS/MILLISECONDS_PER_SECOND));
+	//Spin::Input::Controls.step_counter = f_req_value;
 
-void HardwareAbstractionLayer::Inputs::check_intervals()
-{
-	uint8_t _intervals = extern_input__intervals;
-
-	Spin::Controller::one_interval = BitTst(extern_input__intervals, ONE_INTERVAL_BIT);
-	Spin::Controller::pid_interval = BitTst(extern_input__intervals, PID_INTERVAL_BIT);
-
-	if (BitTst(extern_input__intervals, RPM_INTERVAL_BIT))
-		HardwareAbstractionLayer::Inputs::get_rpm();
-	if (BitTst(extern_input__intervals, ONE_INTERVAL_BIT))
-		HardwareAbstractionLayer::Inputs::get_set_point();
-	//Spin::Input::Controls.sensed_position = enc_count;
 }
 
 void HardwareAbstractionLayer::Inputs::synch_hardware_inputs()
 {
+	uint8_t CONTROL_PORT_PIN_ADDRESS = 0;
+	//BitSet_(CONTROL_PORT_PIN_ADDRESS, ENABLE_PIN);
+	//BitSet_(CONTROL_PORT_PIN_ADDRESS, MODE_PIN_A);
+	//BitSet_(CONTROL_PORT_PIN_ADDRESS, MODE_PIN_B);
 
+	uint8_t current = CONTROL_PORT_PIN_ADDRESS;
+	HardwareAbstractionLayer::Inputs::synch_hardware_inputs(current);
+}
+
+void HardwareAbstractionLayer::Inputs::synch_hardware_inputs(uint8_t current)
+{
+	//mode is read from 2 pins
+	uint8_t mode_pins = 0;
+	if (BitTst(current, MODE_PIN_A))
+		mode_pins++;
+	if (BitTst(current, MODE_PIN_B))
+		mode_pins++;
+	Spin::Input::Controls.in_mode = (Spin::Enums::e_drive_modes)(mode_pins + 1);
+
+	if (BitTst(current, ENABLE_PIN))
+		Spin::Input::Controls.enable = Spin::Enums::e_drive_states::Enabled;
+	else
+		Spin::Input::Controls.enable = Spin::Enums::e_drive_states::Disabled;
+
+	if (BitTst(current, DIRECTION_PIN))
+		Spin::Input::Controls.direction = Spin::Enums::e_directions::Forward;
+	else
+		Spin::Input::Controls.direction = Spin::Enums::e_directions::Reverse;
 }
 
 void HardwareAbstractionLayer::Inputs::initialize()
@@ -159,7 +187,11 @@ void HardwareAbstractionLayer::Inputs::start_wave_read()
 static void TIMER_2_COMPA_vect()
 {
 	//Ive stripped this ISR down to the bare minimum. It seems to run fast enough to read a 2mhz signal reliably.
-
+	if (BitTst(TIMER_1.TIMSK, 0))
+	{
+		//(BitSet_(TIMER_1.TIMSK, 0));//<--clear over flow
+		//local_overflow_accumulator += 256;	//<--add overflow & current count
+	}
 
 	if (pid_count_ticks >= PID_GATE_TIME_MS)
 	{
@@ -177,13 +209,14 @@ static void TIMER_2_COMPA_vect()
 
 	if (tmr_count_ticks >= SET_GATE_TIME_MS)
 	{
-		_ref_timer_count = TIMER_1.TCNT;
+		extern_input__time_count = TIMER_1.TCNT + local_overflow_accumulator;
 		//Leave timers enabled, just reset the counters for them
 		TIMER_1.TCNT = 0;//<-- clear the counter for freq read (desired rpm)
 		//TIMER_2.TCNT = 0;//<-- clear the counter for time keeping
 		//tmr_count_ticks = 0;//	<--reset this to 0, but we will count this as a tick
 		tmr_count_ticks = 0;
-		extern_input__intervals |= (1 << ONE_INTERVAL_BIT);
+		extern_input__intervals |= (1 << ONE_INTERVAL_BIT);//<--flag that 1 second has passed
+		extern_input__intervals |= (1 << RPT_INTERVAL_BIT);//<--flag that its time to report
 	}
 
 	tmr_count_ticks++;

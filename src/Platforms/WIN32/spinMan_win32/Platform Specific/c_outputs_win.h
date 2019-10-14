@@ -1,5 +1,6 @@
 #pragma once
 #include <stdint.h>
+#include "..\..\..\..\c_enumerations.h"
 namespace HardwareAbstractionLayer
 {
 	class Outputs
@@ -11,7 +12,7 @@ namespace HardwareAbstractionLayer
 		static void disable_output();
 		static void disable_output(uint16_t off_value);
 		static void update_output(uint16_t value);
-		static void set_direction(uint8_t direction);
+		static void set_direction(Spin::Enums::e_directions direction);
 	};
 };
 

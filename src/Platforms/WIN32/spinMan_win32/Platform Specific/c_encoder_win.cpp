@@ -11,35 +11,15 @@ void HardwareAbstractionLayer::Encoder::no_vect(){};
 
 void HardwareAbstractionLayer::Encoder::initialize()
 {
-	extern_encoder__enc_count = 1;
-	extern_encoder__active_channels = 0;
-	Platform_Specific_HAL_Encoder_Vector_A = HardwareAbstractionLayer::Encoder::no_vect;
-	Platform_Specific_HAL_Encoder_Vector_B = HardwareAbstractionLayer::Encoder::no_vect;
-	Platform_Specific_HAL_Encoder_Vector_Z = HardwareAbstractionLayer::Encoder::no_vect;
 }
 
 uint32_t HardwareAbstractionLayer::Encoder::get_position()
 {
-	uint32_t _enc_count = extern_encoder__enc_count;
-	return _enc_count;
-}
-
-uint8_t HardwareAbstractionLayer::Encoder::get_encoder_active()
-{
-	return extern_encoder__active_channels;
+	return 0;
 }
 
 void HardwareAbstractionLayer::Encoder::config_chz()
 {
-	//DDRD &= ~(1 << DDD4);	//input mode
-	//PORTD |= (1 << PORTD4);	//enable pullup
-	//
-	////Set the mask to check pin PD4
-	//PCMSK2 = (1<<PCINT19);
-	//
-	////Set the interrupt for PORTD (PCIE1)
-	//PCICR |= (1<<PCIE1);
-	//PCIFR |= (1<<PCIF1);
 }
 
 void HardwareAbstractionLayer::Encoder::config_cha()
@@ -70,7 +50,11 @@ void HardwareAbstractionLayer::Encoder::read_chz()
 void HardwareAbstractionLayer::Encoder::read_quad()
 {
 }
-
+uint8_t HardwareAbstractionLayer::Encoder::get_active_channels()
+{
+	uint8_t _return = extern_encoder__active_channels;
+	return _return;
+}
 
 //ISR(INT0_vect)
 //{

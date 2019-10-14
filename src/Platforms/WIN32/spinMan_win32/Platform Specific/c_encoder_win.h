@@ -26,7 +26,7 @@ namespace HardwareAbstractionLayer
 		static void read_chb();
 		static void read_chz();
 		static void read_quad();
-		static uint8_t get_encoder_active();
+		static uint8_t get_active_channels();
 	};
 };
 
