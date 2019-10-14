@@ -3,33 +3,13 @@
 #include "../../../../c_controller.h"
 #include "../../../../c_configuration.h"
 #include "../../../../bit_manipulation.h"
-#include "volatile_encoder_externs.h"
+#include "..\..\..\..\volatile_encoder_externs.h"
 #define __INPUT_VOLATILES__
-#include "volatile_input_externs.h"
+#include "..\..\..\..\volatile_input_externs.h"
 
 volatile uint32_t local_overflow_accumulator = 0;
 
-void HardwareAbstractionLayer::Inputs::get_rpm()
-{
-	if (!BitTst(extern_input__intervals,RPM_INTERVAL_BIT))
-	return;//<--return if its not time
-	
-	//In velocity mode we only care if the sensed rpm matches the input rpm
-	//In position mode we only care if the sensed position matches the input position.
 
-	BitClr_(extern_input__intervals, RPM_INTERVAL_BIT);
-	uint32_t mean_enc = 0;
-	for (int i=0;i<ENCODER_SUM_ARRAY_SIZE;i++)
-	{
-		mean_enc +=enc_sum_array[i];
-	}
-
-	mean_enc = mean_enc/ENCODER_SUM_ARRAY_SIZE;
-	//doing some scaling up and down trying to avoid float math as much as possible.
-	int32_t rps = ((mean_enc * TIMER_FRQ_HZ) * extern_encoder__ticks_per_rev * 100 * 60) / 1000;
-	//multiiply rps *60 to get rpm.
-	Spin::Input::Controls.sensed_rpm = rps;
-}
 
 void HardwareAbstractionLayer::Inputs::get_set_point()
 {
@@ -153,9 +133,22 @@ ISR(TIMER2_COMPA_vect)
 	}
 	if (rpm_count_ticks >= RPM_GATE_TIME_MS)
 	{
-		enc_sum_array[(++enc_sum_array_head) & ENCODER_SUM_SIZE_MSK] = enc_ticks_at_current_time;
-		_ref_enc_count = enc_ticks_at_current_time;
-		enc_ticks_at_current_time = 0; rpm_count_ticks = 0;
+		/*
+		Encoder has been counting ticks while waiting on timer to reach rpm gate.
+		Now that we have gotten to the gate time, we transfer the count of ticks
+		in that time period over to the encoder struct, so that the rpm calculator
+		inside the c_encoder class can do its math.
+		*/
+		spindle_encoder.period_ticks = extern_encoder__ticks_at_time;
+		/*
+		Extern_encoder__tick_at_time changes in the encoder isr, not the timer isr.
+		Now that we have saved off the value for the rpm computation we can reset it
+		for the next rpm gate time
+		*/
+		extern_encoder__ticks_at_time = 0;
+		//clear the gate counter
+		rpm_count_ticks = 0;
+		//flag that the rpm time has expired.
 		extern_input__intervals |=(1<<RPM_INTERVAL_BIT);
 	}
 

@@ -36,6 +36,8 @@ static const float SET_GATE_TIME_MS = TIMER_FRQ_HZ; //slowest
 #define ONE_INTERVAL_BIT 2
 #define RPT_INTERVAL_BIT 3
 
+
+
 namespace Spin
 {
 	class Input
@@ -44,16 +46,14 @@ namespace Spin
 		
 		struct s_flags
 		{
-			uint32_t step_counter;
+			uint32_t target;
 			Spin::Enums::e_drive_modes in_mode;
 			Spin::Enums::e_drive_states enable;
 			Spin::Enums::e_directions direction;
-			uint32_t index;
-			int32_t sensed_rpm = 0;
-			int32_t sensed_position = 0;
+			//uint32_t index;
+			//int32_t sensed_position; //<--Removed. Use extern_encoder__count instead
+			
 		};
-		
-		
 		
 		//variables
 		public:

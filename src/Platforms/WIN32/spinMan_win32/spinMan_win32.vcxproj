@@ -42,8 +42,6 @@
     <ClInclude Include="Platform Specific\c_inputs_win.h" />
     <ClInclude Include="Platform Specific\c_outputs_win.h" />
     <ClInclude Include="Platform Specific\c_serial_win.h" />
-    <ClInclude Include="Platform Specific\volatile_encoder_externs.h" />
-    <ClInclude Include="Platform Specific\volatile_input_externs.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\..\..\README.md" />

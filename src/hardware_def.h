@@ -16,8 +16,8 @@
 #include "Platforms/AVR_328/spinMan_AVR328/Platform Specific/c_inputs_avr_328.h"
 #include "Platforms/AVR_328/spinMan_AVR328/Platform Specific/c_serial_avr_328.h"
 #include "Platforms/AVR_328/spinMan_AVR328/Platform Specific/c_encoder_avr_328.h"
-#include "Platforms/AVR_328/spinMan_AVR328/Platform Specific/volatile_encoder_externs.h"
-#include "Platforms/AVR_328/spinMan_AVR328/Platform Specific/volatile_input_externs.h"
+//#include "Platforms/AVR_328/spinMan_AVR328/Platform Specific/volatile_encoder_externs.h"
+//#include "Platforms/AVR_328/spinMan_AVR328/Platform Specific/volatile_input_externs.h"
 #endif
 
 #ifdef __SAM3X8E__
@@ -35,7 +35,7 @@
 #include "Platforms/WIN32/spinMan_win32/Platform Specific/c_outputs_win.h"
 #include "Platforms/WIN32/spinMan_win32/Platform Specific/c_core_win.h"
 #include "Platforms/WIN32/spinMan_win32/Platform Specific/c_serial_win.h"
-#include "Platforms/WIN32/spinMan_win32/Platform Specific/volatile_encoder_externs.h"
-#include "Platforms/WIN32/spinMan_win32/Platform Specific/volatile_input_externs.h"
+//#include "Platforms/WIN32/spinMan_win32/Platform Specific/volatile_encoder_externs.h"
+//#include "Platforms/WIN32/spinMan_win32/Platform Specific/volatile_input_externs.h"
 #endif
 #endif

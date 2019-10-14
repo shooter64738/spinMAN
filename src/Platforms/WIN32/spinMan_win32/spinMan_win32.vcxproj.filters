@@ -58,12 +58,6 @@
     <ClInclude Include="..\..\..\bit_manipulation.h" />
     <ClInclude Include="..\..\..\c_enumerations.h" />
     <ClInclude Include="..\..\..\c_pid.h" />
-    <ClInclude Include="Platform Specific\volatile_encoder_externs.h">
-      <Filter>Platform Specific</Filter>
-    </ClInclude>
-    <ClInclude Include="Platform Specific\volatile_input_externs.h">
-      <Filter>Platform Specific</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Platform Specific">

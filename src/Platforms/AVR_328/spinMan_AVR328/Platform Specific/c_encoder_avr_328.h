@@ -4,16 +4,14 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 
-#define ENCODER_SUM_ARRAY_SIZE 8
-#define ENCODER_SUM_SIZE_MSK (ENCODER_SUM_ARRAY_SIZE-1U)
+//#define ENCODER_SUM_ARRAY_SIZE 8
+//#define ENCODER_SUM_SIZE_MSK (ENCODER_SUM_ARRAY_SIZE-1U)
 
 #define ENC_CHA_TRK_BIT (1<<0)
 #define ENC_CHB_TRK_BIT (1<<1)
 #define ENC_CHZ_TRK_BIT (1<<2)
 
 #define INDEX_PIN PIND4	//Nano pin D4
-
-
 
 namespace HardwareAbstractionLayer
 {
@@ -29,6 +27,8 @@ namespace HardwareAbstractionLayer
 		static void config_cha();
 		static void config_chb();
 		static void configure_encoder_quadrature();
+		static void get_rpm();
+		static void get_rpm_quad();
 		static void read_cha();
 		static void read_chb();
 		static void read_chz();

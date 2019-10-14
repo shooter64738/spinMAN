@@ -4,8 +4,9 @@
 #include "../../../../c_configuration.h"
 #include "../../../../bit_manipulation.h"
 #include "../../../../bit_manipulation.h"
+#include "../../../../volatile_encoder_externs.h"
 #define __INPUT_VOLATILES__
-#include "volatile_input_externs.h"
+#include "../../../../volatile_input_externs.h"
 
 static const int8_t encoder_table[] = { 0, -1, 1, 0, 1, 0, 0, -1, -1, 0, 0, 1, 0, 1, -1, 0 };
 static uint8_t enc_val = 0;
@@ -41,29 +42,6 @@ static s_timer TIMER_1;
 static s_timer TIMER_2;
 
 volatile uint32_t local_overflow_accumulator = 0;
-
-void HardwareAbstractionLayer::Inputs::get_rpm()
-{
-	if (!BitTst(extern_input__intervals, RPM_INTERVAL_BIT))
-		return;//<--return if its not time
-
-	//In velocity mode we only care if the sensed rpm matches the input rpm
-	//In position mode we only care if the sensed position matches the input position.
-
-	BitClr_(extern_input__intervals, RPM_INTERVAL_BIT);
-	uint32_t mean_enc = 0;
-	for (int i = 0; i<ENCODER_SUM_ARRAY_SIZE; i++)
-	{
-		mean_enc += enc_sum_array[i];
-	}
-
-	mean_enc = mean_enc / ENCODER_SUM_ARRAY_SIZE;
-	//doing some scaling up and down trying to avoid float math as much as possible.
-	int32_t rps = ((mean_enc * TIMER_FRQ_HZ) * extern_encoder__ticks_per_rev * 100 * 60) / 1000;
-	//multiiply rps *60 to get rpm.
-	Spin::Input::Controls.sensed_rpm = rps;
-}
-
 
 void HardwareAbstractionLayer::Inputs::get_set_point()
 {
@@ -200,10 +178,7 @@ static void TIMER_2_COMPA_vect()
 	}
 	if (rpm_count_ticks >= RPM_GATE_TIME_MS)
 	{
-		enc_sum_array[(++enc_sum_array_head) & ENCODER_SUM_SIZE_MSK] = 9;
-		
-		_ref_enc_count = enc_ticks_at_current_time;
-		enc_ticks_at_current_time = 0; rpm_count_ticks = 0;
+		extern_encoder__ticks_at_time = 0; rpm_count_ticks = 0;
 		extern_input__intervals |= (1 << RPM_INTERVAL_BIT);
 	}
 
@@ -231,7 +206,7 @@ void HardwareAbstractionLayer::Inputs::timer2_compa_vect_thread()
 	{
 		//this is a simulated pulse count from timer 1
 		TIMER_1.TCNT += 2;
-
+		spindle_encoder.position++;
 		//only run a step timer tick if the 'timer' is enabled
 		if (TIMER_2.TIMSK & (1 << OCIE2A))
 		{

@@ -36,8 +36,6 @@ namespace Spin
 		//functions
 		public:
 		static void initialize();
-		static void simple();
-		static void calibrate();
 		static void run();
 		static void sync_out_in_control();
 		static void process();

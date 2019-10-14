@@ -11,6 +11,8 @@
 #include "bit_manipulation.h"
 #include "c_input.h"
 #include "c_controller.h"
+#include "volatile_encoder_externs.h"
+#include "volatile_input_externs.h"
 
 
 
@@ -87,8 +89,8 @@ void Spin::Configuration::load_defaults()
 	Spin::Configuration::Drive_Settings.Encoder_Config.Encoder_Ticks_Per_Rev = 100;
 	//If quadrature mode is active the 100 pulses per rotation is multiplied by 4 (quadrature count)
 	Spin::Configuration::Drive_Settings.Encoder_Config.Encoder_Mode = Enums::e_encoder_modes::Quadrature;
-	Platform_Specific_HAL_Encoder_Vector_A = HardwareAbstractionLayer::Encoder::read_quad;
-	Platform_Specific_HAL_Encoder_Vector_B = HardwareAbstractionLayer::Encoder::read_quad;
+	spindle_encoder.func_vectors.Encoder_Vector_A = HardwareAbstractionLayer::Encoder::read_quad;
+	spindle_encoder.func_vectors.Encoder_Vector_B = HardwareAbstractionLayer::Encoder::read_quad;
 	
 	//assume there has not been a config done.
 	Spin::Configuration::Status = Spin::Enums::e_config_results::Incomplete_Config;
@@ -133,7 +135,7 @@ Spin::Enums::e_config_results Spin::Configuration::_config_encoder()
 	
 	//Spin::Controller::host_serial.print_string("chans:");
 	//Spin::Controller::host_serial.print_int32(extern_encoder__active_channels);
-	extern_encoder__active_channels = 0;
+	spindle_encoder.active_channels = 0;
 	for (int i=0;i<6;i++)
 	//while(1)
 	{
@@ -145,7 +147,7 @@ Spin::Enums::e_config_results Spin::Configuration::_config_encoder()
 			*/
 			HardwareAbstractionLayer::Encoder::get_active_channels();
 			
-			if (extern_encoder__active_channels == (int)Enums::e_encoder_modes::Quadrature_wIndex)
+			if (spindle_encoder.active_channels == (int)Enums::e_encoder_modes::Quadrature_wIndex)
 			break;
 		}
 		extern_input__intervals &= ~(1<<ONE_INTERVAL_BIT);
@@ -153,7 +155,7 @@ Spin::Enums::e_config_results Spin::Configuration::_config_encoder()
 		//extern_encoder__active_channels = 0;
 	}
 	Spin::Controller::host_serial.print_string(">\r");
-	if (extern_encoder__active_channels == 0 )
+	if (spindle_encoder.active_channels == 0 )
 	{
 		write_message("ENC_NON\r\n\0");
 		return Spin::Enums::e_config_results::Encoder_Not_Available ;
@@ -177,25 +179,25 @@ Spin::Enums::e_config_results Spin::Configuration::_config_encoder()
 	
 	therefore in decimal value it will match the enum values
 	*/
-	Configuration::Drive_Settings.Encoder_Config.Encoder_Mode = (Spin::Enums::e_encoder_modes) extern_encoder__active_channels;
+	Configuration::Drive_Settings.Encoder_Config.Encoder_Mode = (Spin::Enums::e_encoder_modes) spindle_encoder.active_channels;
 	//Now that the encoder type is known we can set the pointer for the isrs to call when something happens
 	
 
 	Spin::Controller::host_serial.print_string("ENC_CHN:");
 	//This will cover most encoders, but I handle quadrature and quadrature with index different
-	if (extern_encoder__active_channels & ENC_CHA_TRK_BIT)
+	if (spindle_encoder.active_channels & ENC_CHA_TRK_BIT)
 	{
-		Platform_Specific_HAL_Encoder_Vector_A = HardwareAbstractionLayer::Encoder::read_cha;
+		spindle_encoder.func_vectors.Encoder_Vector_A = HardwareAbstractionLayer::Encoder::read_cha;
 		Spin::Controller::host_serial.print_string("A");
 	}
-	if (extern_encoder__active_channels & ENC_CHB_TRK_BIT)
+	if (spindle_encoder.active_channels & ENC_CHB_TRK_BIT)
 	{
-		Platform_Specific_HAL_Encoder_Vector_B = HardwareAbstractionLayer::Encoder::read_chb;
+		spindle_encoder.func_vectors.Encoder_Vector_B = HardwareAbstractionLayer::Encoder::read_chb;
 		Spin::Controller::host_serial.print_string("B");
 	}
-	if (extern_encoder__active_channels & ENC_CHZ_TRK_BIT)
+	if (spindle_encoder.active_channels & ENC_CHZ_TRK_BIT)
 	{
-		Platform_Specific_HAL_Encoder_Vector_Z = HardwareAbstractionLayer::Encoder::read_chz;
+		spindle_encoder.func_vectors.Encoder_Vector_Z = HardwareAbstractionLayer::Encoder::read_chz;
 		Spin::Controller::host_serial.print_string("Z");
 	}
 	//Special handler for quadrature because they report direction too.
@@ -203,11 +205,11 @@ Spin::Enums::e_config_results Spin::Configuration::_config_encoder()
 	|| Configuration::Drive_Settings.Encoder_Config.Encoder_Mode == Spin::Enums::e_encoder_modes::Quadrature_wIndex)
 	{
 		Spin::Controller::host_serial.print_string(" QD");
-		Platform_Specific_HAL_Encoder_Vector_A = HardwareAbstractionLayer::Encoder::read_quad;
-		Platform_Specific_HAL_Encoder_Vector_B = HardwareAbstractionLayer::Encoder::read_quad;
+		spindle_encoder.func_vectors.Encoder_Vector_A = HardwareAbstractionLayer::Encoder::read_quad;
+		spindle_encoder.func_vectors.Encoder_Vector_B = HardwareAbstractionLayer::Encoder::read_quad;
 		if (Configuration::Drive_Settings.Encoder_Config.Encoder_Mode == Spin::Enums::e_encoder_modes::Quadrature_wIndex)
 		{
-			Platform_Specific_HAL_Encoder_Vector_B = HardwareAbstractionLayer::Encoder::read_chz;
+			spindle_encoder.func_vectors.Encoder_Vector_B = HardwareAbstractionLayer::Encoder::read_chz;
 			Spin::Controller::host_serial.print_string(" I");
 		}
 	}
@@ -229,7 +231,7 @@ Spin::Enums::e_config_results Spin::Configuration::_config_encoder()
 	//Here we need to run a forward/reverse test to determine the proper direction of the encoder
 	
 	//Clear the encoder position
-	extern_encoder__count = 0;
+	spindle_encoder.position = 0;
 	Spin::Controller::host_serial.print_string("ENC_DIR\r");
 	//extern_encoder__direction = 0;
 	
@@ -249,7 +251,7 @@ Spin::Enums::e_config_results Spin::Configuration::_config_encoder()
 			*/
 			HardwareAbstractionLayer::Encoder::get_active_channels();
 			
-			if (extern_encoder__direction != 0)
+			if (spindle_encoder.direction != 0)
 			break;
 		}
 		extern_input__intervals &= ~(1<<ONE_INTERVAL_BIT);
@@ -259,7 +261,7 @@ Spin::Enums::e_config_results Spin::Configuration::_config_encoder()
 	HardwareAbstractionLayer::Outputs::disable_output();
 	Spin::Controller::host_serial.print_string(">\r");
 	Spin::Controller::host_serial.print_string("ENC_DIR:");
-	Spin::Controller::host_serial.print_int32(extern_encoder__direction);
+	Spin::Controller::host_serial.print_int32(spindle_encoder.direction);
 	Spin::Controller::host_serial.print_string("DIR_FWD\r");
 	write_message("ENC_OK\r\n\0");
 	

@@ -17,7 +17,6 @@ namespace HardwareAbstractionLayer
 	public:
 		static void no_vect();
 		static void initialize();
-		static uint32_t get_position();
 		static void config_chz();
 		static void config_cha();
 		static void config_chb();
@@ -27,6 +26,8 @@ namespace HardwareAbstractionLayer
 		static void read_chz();
 		static void read_quad();
 		static uint8_t get_active_channels();
+		static void get_rpm();
+		static void get_rpm_quad();
 	};
 };
 

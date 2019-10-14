@@ -19,7 +19,6 @@
 #define MAX_LONG INT32_MAX
 #define MAX_I_TERM (MAX_LONG / 2)
 #define PID_SCALING_FACTOR 128
-#define OUTPUT_OFF 255
 
 namespace Spin
 {
@@ -60,7 +59,7 @@ namespace Spin
 				min = 0;
 				maxError = 0;
 				maxSumError = 0;
-				pid_calc.output = OUTPUT_OFF;
+				
 				invert_output = 0;
 				pid_calc.lastProcessValue = 0;
 				pid_calc.lasterror = 0;

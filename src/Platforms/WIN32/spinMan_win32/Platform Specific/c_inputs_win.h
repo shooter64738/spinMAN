@@ -5,9 +5,6 @@ namespace HardwareAbstractionLayer
 	class Inputs
 	{
 	public:
-		
-		
-		static void get_rpm();
 		static void get_set_point();
 		static void initialize();
 		static void configure();
@@ -16,7 +13,6 @@ namespace HardwareAbstractionLayer
 		static void synch_hardware_inputs(uint8_t current);
 		static void start_wave_read();
 		static void HardwareAbstractionLayer::Inputs::timer2_compa_vect_thread();
-		static void check_intervals();
 	private:
 		static std::thread timer2_comp_a_thread;
 	};
