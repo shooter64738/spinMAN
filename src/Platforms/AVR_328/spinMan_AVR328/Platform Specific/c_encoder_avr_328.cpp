@@ -16,12 +16,22 @@ void HardwareAbstractionLayer::Encoder::initialize()
 	spindle_encoder.position = 0;
 	spindle_encoder.active_channels = 0;
 	spindle_encoder.ticks_per_rev = 400;
-	spindle_encoder.func_vectors.Encoder_Vector_A = HardwareAbstractionLayer::Encoder::read_quad; // HardwareAbstractionLayer::Encoder::no_vect;
-	spindle_encoder.func_vectors.Encoder_Vector_B = HardwareAbstractionLayer::Encoder::read_quad; //HardwareAbstractionLayer::Encoder::no_vect;
+	/*
+	These are default configs on start up. They may change entirly after
+	a configuration is loaded in the c_configuration class.
+	*/
+	//setup isr's on int0, int1 for quadrature encoder with no index
+	HardwareAbstractionLayer::Encoder::configure_encoder_quadrature();
+
+	//assign a function pointer to be called when a isr runs.
+	spindle_encoder.func_vectors.Encoder_Vector_A = HardwareAbstractionLayer::Encoder::read_quad;
+	//assign a function pointer to be called when b isr runs.
+	spindle_encoder.func_vectors.Encoder_Vector_B = HardwareAbstractionLayer::Encoder::read_quad;
+	//assign a function pointer to be called when z isr runs.
 	spindle_encoder.func_vectors.Encoder_Vector_Z = HardwareAbstractionLayer::Encoder::no_vect;
+	//assign a function pointer to compute rpm based on encoder type.
 	spindle_encoder.func_vectors.Rpm_Compute = HardwareAbstractionLayer::Encoder::get_rpm_quad;
-	HardwareAbstractionLayer::Encoder::config_cha();
-	HardwareAbstractionLayer::Encoder::config_chb();
+	
 }
 
 uint8_t HardwareAbstractionLayer::Encoder::get_active_channels()
@@ -96,9 +106,57 @@ void HardwareAbstractionLayer::Encoder::config_chb()
 
 void HardwareAbstractionLayer::Encoder::configure_encoder_quadrature()
 {
+	//configure channel a on int0;
+	HardwareAbstractionLayer::Encoder::config_cha();
+	//configure channel b on int1;
+	HardwareAbstractionLayer::Encoder::config_chb();
+	
+}
+
+void HardwareAbstractionLayer::Encoder::configure_encoder_quadrature_w_z()
+{
+	//configure channels a/b on int0 and int1
+	HardwareAbstractionLayer::Encoder::configure_encoder_quadrature();
+	//configure the z index on pcint
+	HardwareAbstractionLayer::Encoder::config_chz();
+	
+	
+}
+
+void HardwareAbstractionLayer::Encoder::configure_test_channels()
+{
+	//Setup isr events for all 3 channels
 	HardwareAbstractionLayer::Encoder::config_cha();
 	HardwareAbstractionLayer::Encoder::config_chb();
 	HardwareAbstractionLayer::Encoder::config_chz();
+
+	//assign function pointer for testing to each of the isr callers
+
+	//assign a function pointer to be called when a isr runs.
+	spindle_encoder.func_vectors.Encoder_Vector_A = HardwareAbstractionLayer::Encoder::test_channels;
+	//assign a function pointer to be called when b isr runs.
+	spindle_encoder.func_vectors.Encoder_Vector_B = HardwareAbstractionLayer::Encoder::test_channels;
+	//assign a function pointer to be called when z isr runs.
+	spindle_encoder.func_vectors.Encoder_Vector_Z = HardwareAbstractionLayer::Encoder::test_channels;
+}
+
+void HardwareAbstractionLayer::Encoder::configure_disable_channels()
+{
+	//disable the hardware reading channel a. this will disable the isr
+	EICRA &= ~(1 << ISC00);	// Trigger on any change on INT0 PD2 (pin D2)
+	EIMSK &= ~(1 << INT0);// disable external interrupt INT0
+	//disable the hardware reading channel b. this will disable the isr
+	EICRA &= ~(1 << ISC10);	// Trigger on any change on INT1 PD3 (pin D3)
+	EIMSK &= ~(1 << INT1);// disable external interrupt INT1
+	//disable the hardware reading channel z. this will disable the isr
+	//PCMSK2 &= ~(1<<PCINT19); // disable pin change interrupt pcint19
+
+	//assign function pointers that does nothing. with the isrs disabled
+	//this should have no effect at all. 
+
+	spindle_encoder.func_vectors.Encoder_Vector_A = HardwareAbstractionLayer::Encoder::no_vect;
+	spindle_encoder.func_vectors.Encoder_Vector_B = HardwareAbstractionLayer::Encoder::no_vect;
+	spindle_encoder.func_vectors.Encoder_Vector_Z = HardwareAbstractionLayer::Encoder::no_vect;
 }
 
 void HardwareAbstractionLayer::Encoder::get_rpm_quad()
@@ -117,16 +175,52 @@ void HardwareAbstractionLayer::Encoder::get_rpm_quad()
 	spindle_encoder.sensed_rpm = rps;
 }
 
+void HardwareAbstractionLayer::Encoder::test_channels()
+{
+	//This method should only get called during auto configuration.
+	//It will read port 'D' to determine which channels of the encoder
+	//are active and then the auto config can decide which vectors to
+	//point to.
+	uint8_t capture_port = PIND;
+
+	//Check pin 0. (int0)
+	if (BitTst(capture_port,PIND0)) //<--encoder channel a
+	spindle_encoder.active_channels |= ENC_CHA_TRK_BIT;
+
+	//Check pin 1. (int1)
+	if (BitTst(capture_port,PIND1)) //<--encoder channel b
+	spindle_encoder.active_channels |= ENC_CHB_TRK_BIT;
+
+	//Check pin 4. (pcint4)
+	if (BitTst(capture_port,PIND4)) //<--encoder channel z
+	spindle_encoder.active_channels |= ENC_CHZ_TRK_BIT;
+}
+
 void HardwareAbstractionLayer::Encoder::read_cha()
 {
+	//single channel can't determine direction so it only counts 'up'
+	spindle_encoder.position ++;
+
+	if (spindle_encoder.position >spindle_encoder.ticks_per_rev)
+	spindle_encoder.position = 1;
 }
 
 void HardwareAbstractionLayer::Encoder::read_chb()
 {
+	//single channel can't determine direction so it only counts 'up'
+	spindle_encoder.position ++;
+
+	if (spindle_encoder.position >spindle_encoder.ticks_per_rev)
+	spindle_encoder.position = 1;
 }
 
 void HardwareAbstractionLayer::Encoder::read_chz()
 {
+
+	//So long as the timer remains enabled we can track rpm.
+	extern_encoder__ticks_at_time++;
+	//reset the encoder position when z index is read
+	spindle_encoder.position = 1;
 }
 
 void HardwareAbstractionLayer::Encoder::read_quad()
@@ -149,23 +243,39 @@ void HardwareAbstractionLayer::Encoder::read_quad()
 	extern_encoder__ticks_at_time++;
 }
 
+void HardwareAbstractionLayer::Encoder::read_quad_with_z()
+{
+	//UDR0='c';
+	//uint32_t enc_ticks_per_rev = Spin::Configuration::Drive_Settings.Encoder_Config.Encoder_Ticks_Per_Rev;
+	
+	enc_val = enc_val << 2; // shift the previous state to the left
+	enc_val = enc_val | ((PIND & 0b1100) >> 2); // or the current state into the 2 rightmost bits
+	spindle_encoder.direction = encoder_table[enc_val & 0b1111];    // preform the table lookup and increment count accordingly
+	spindle_encoder.position += spindle_encoder.direction;
+	
+	//We shouldn't need to track any of this if there is a z index
+
+	//if (spindle_encoder.position == 0)
+	//spindle_encoder.position = spindle_encoder.ticks_per_rev;
+	//else if (spindle_encoder.position >spindle_encoder.ticks_per_rev)
+	//spindle_encoder.position = 1;
+	//
+	//
+	////So long as the timer remains enabled we can track rpm.
+	//extern_encoder__ticks_at_time++;
+}
+
 
 ISR (INT0_vect)
 {
 	//UDR0='a';
-	//c_Encoder_RPM::Encoder_Trigger();
-	spindle_encoder.active_channels |= ENC_CHA_TRK_BIT;
 	spindle_encoder.func_vectors.Encoder_Vector_A(); //call a method dependent on what the configuration told us to call!
-	//HardwareAbstractionLayer::Inputs::update_encoder_for_quad();
-	
 }
 
 ISR(INT1_vect)
 {
 	//UDR0='b';
-	spindle_encoder.active_channels |= ENC_CHB_TRK_BIT;
 	spindle_encoder.func_vectors.Encoder_Vector_B(); //call a method dependent on what the configuration told us to call!
-	//HardwareAbstractionLayer::Inputs::update_encoder_for_quad();
 }
 
 //ISR (PCINT1_vect)

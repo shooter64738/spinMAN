@@ -27,12 +27,17 @@ namespace HardwareAbstractionLayer
 		static void config_cha();
 		static void config_chb();
 		static void configure_encoder_quadrature();
+		static void configure_encoder_quadrature_w_z();
+		static void configure_test_channels();
 		static void get_rpm();
+		static void configure_disable_channels();
 		static void get_rpm_quad();
 		static void read_cha();
 		static void read_chb();
 		static void read_chz();
+		static void test_channels();
 		static void read_quad();
+		static void read_quad_with_z();
 		static uint8_t get_active_channels();
 	};
 };
