@@ -141,6 +141,10 @@ void Spin::Output::set_mode(Spin::Enums::e_drive_modes new_mode)
 
 void Spin::Output::set_direction(Spin::Enums::e_directions direction)
 {
+	//If direction is already set to same value, just return
+	if (Spin::Output::Controls.direction == direction)
+	return;
+	
 	Spin::Output::Controls.direction = direction;
 	HardwareAbstractionLayer::Outputs::set_direction(direction);
 }

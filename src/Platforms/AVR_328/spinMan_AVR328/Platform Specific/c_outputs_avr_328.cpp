@@ -1,35 +1,39 @@
 #include "c_outputs_avr_328.h"
 #include "..\..\..\..\c_configuration.h"
 
-#define OUT_TCCRA TCCR1A
-#define OUT_TCCRB TCCR1B
-#define OUT_OCR	 OCR1A
+//#define OUT_TCCRA TCCR1A
+//#define OUT_TCCRB TCCR1B
+//#define OUT_OCR	 OCR1A
 
 void HardwareAbstractionLayer::Outputs::initialize()
 {
-	
+	//set mode to output
+	DDRB |= (1<<DDB5) | (1<<DDB4);
+	//enable pullups
+	PORTB |= (1<<PORTB5) | (1<<PORTB4);
+	//I cannot start this in free mode with the power solutions driver
+	//Defaulting to forward mode because a direction must be set at the
+	//time we start a pwm signal, even if the signal will not make the
+	//motor move.
+	HardwareAbstractionLayer::Outputs::set_direction(Spin::Enums::e_directions::Forward);
+	asm("nop");
 	HardwareAbstractionLayer::Outputs::configure_pwm_output_timer();
-	
-	DIRECTION_PORT_DIRECTION |= (1<<FORWARD_PIN) | (1<<REVERSE_PIN);
-	DIRECTION_PORT |= (1<<PORTB5) | (1<<PORTB4);
+	asm("nop");
+	HardwareAbstractionLayer::Outputs::set_direction(Spin::Enums::e_directions::Reverse);
+	asm("nop");
+	HardwareAbstractionLayer::Outputs::set_direction(Spin::Enums::e_directions::Forward);
+		
 }
 
 void HardwareAbstractionLayer::Outputs::configure_pwm_output_timer()
 {
-	//enable pwm output
-	PWM_DIR_PORT |= (1<<PWM_DIR_PORT_ID);
-	
+	DDRB |= (1<<DDB1);
 	ICR1 = 65535;
-	OUT_OCR = Spin::Configuration::Drive_Settings.Drive_Turn_Off_Value;
-	
-	OUT_TCCRA = (1 << COM1A1)|(1 << COM1B1);
-	
-	OUT_TCCRA |= (1 << WGM11);
-	OUT_TCCRB |= (1 << WGM12)|(1 << WGM13);
-	// set Fast PWM mode using ICR1 as TOP
-	
-	//TCCR1B |= (1 << CS10);
-	// START the timer with no prescaler
+	OCR1A = 65535;
+	TCCR1A = (1 << COM1A1)|(1 << COM1B1);
+	TCCR1A |= (1 << WGM11);
+	TCCR1B |= (1 << WGM12)|(1 << WGM13);
+	TCCR1B |= (1 << CS10);
 	
 }
 
@@ -37,36 +41,37 @@ void HardwareAbstractionLayer::Outputs::set_direction(Spin::Enums::e_directions 
 {
 	if (direction == Spin::Enums::e_directions::Forward)
 	{
-		DIRECTION_PORT &= ~(1<<REVERSE_PIN);//make reverse pin low
-		DIRECTION_PORT |= (1<<FORWARD_PIN);//make forward pin high
+		PORTB &= ~(1<<PINB4);//make brake pin low
+		PORTB |= (1<<PINB5);//make direction pin high
 	}
 	else if (direction == Spin::Enums::e_directions::Reverse)
 	{
-		DIRECTION_PORT &= ~(1<<FORWARD_PIN);//make forward pin low
-		DIRECTION_PORT |= (1<<REVERSE_PIN);//make reverse pin high
+		PORTB &= ~(1<<PINB4);//make brake pin low
+		PORTB &= ~(1<<PINB5);//make direction pin low
 	}
 	else if (direction == Spin::Enums::e_directions::Free)
 	{
 		//freewheel
-		DIRECTION_PORT |= (1<<FORWARD_PIN);//make forward pin high
-		DIRECTION_PORT |= (1<<REVERSE_PIN);//make reverse pin high
+		PORTB |= (1<<PINB5);//make direction pin high
+		PORTB |= (1<<PINB4);//make brake pin high
 	}
 }
 
 void HardwareAbstractionLayer::Outputs::disable_output()
 {
 	//disable pwm output
-	OUT_TCCRB &= ~(1 << CS10);
-	OUT_OCR = Spin::Configuration::Drive_Settings.Drive_Turn_Off_Value;
+	//TCCR1B &= ~(1 << CS10);
+	OCR1A = 65535;
+	//PORTB &= ~(1<<PINB1);//make pwm pin low
+	
 }
 
 void HardwareAbstractionLayer::Outputs::enable_output()
 {
-	
-	OUT_TCCRB |= (1 << CS10);
+	TCCR1B |= (1 << CS10);
 }
 
 void HardwareAbstractionLayer::Outputs::update_output(uint16_t value)
 {
-	OUT_OCR = value;
+	OCR1A = value;
 }

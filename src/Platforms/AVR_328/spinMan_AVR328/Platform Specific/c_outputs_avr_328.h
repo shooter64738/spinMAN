@@ -16,8 +16,8 @@
 #define DIRECTION_PORT PORTB
 #define DIRECTION_PORT_DIRECTION DDRB
 #define DIRECTION_PORT_PIN_ADDRESS PINB
-#define FORWARD_PIN PINB5			//Nano pin D13
-#define REVERSE_PIN PINB4			//Nano pin D12
+#define OUT_DIRECTION_PIN PB5			//Nano pin D13
+#define BRAKE_PIN PB4			//Nano pin D12
 
 namespace HardwareAbstractionLayer
 {

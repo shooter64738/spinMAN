@@ -51,28 +51,65 @@ void Spin::Controller::initialize()
 	Spin::Output::set_direction(Spin::Input::Controls.direction);
 
 }
-
+//63800 starts motor
 void Spin::Controller::run()
 {
-	
+	//DDRB |= (1<<DDB1);
+	//ICR1 = 65535;
+	//OCR1A = 65535;
+	//TCCR1A = (1 << COM1A1)|(1 << COM1B1);
+	//TCCR1A |= (1 << WGM11);
+	//TCCR1B |= (1 << WGM12)|(1 << WGM13);
+	//TCCR1B |= (1 << CS10);
+	//uint32_t tick=0;
+	////OCR1A --;
+	//Spin::Controller::host_serial.print_string(" wait:");
+	//Spin::Controller::host_serial.print_int32(OCR1A);
+	//Spin::Controller::host_serial.print_string("\r");
+	//Spin::Output::set_direction(Enums::e_directions::Free);
+	//while(1)
+	//{
+		//tick++;
+		//if (tick>5000000)
+		//{
+			//tick = 0;
+			//break;
+		//}
+	//}
+	//while(1)
+	//{
+		//tick++;
+		//if (tick>200000)
+		//{
+			//tick = 0;
+			//OCR1A = 63750;// --;
+			//Spin::Controller::host_serial.print_string(" set dir:");
+			//Spin::Controller::host_serial.print_int32(OCR1A);
+			//Spin::Controller::host_serial.print_string("\r");
+		//}
+		//
+	//}
 	user_pos = 200;
 	spindle_encoder.position = 40;
 
-	Spin::Output::set_drive_state(Spin::Enums::e_drive_states::Enabled);
+	
 	//Spin::Input::Controls.in_mode = Spin::Enums::e_drive_modes::Velocity;
-	HardwareAbstractionLayer::Outputs::update_output(60000);
+	
 	while (1)
 	{
 
 		HardwareAbstractionLayer::Inputs::synch_hardware_inputs();//<--read input states from hardware
 		Spin::Controller::sync_out_in_control();//<--synch input/output control states
-		HardwareAbstractionLayer::Encoder::get_rpm();//<--check rpm, recalculate if its time
-		HardwareAbstractionLayer::Inputs::get_set_point();//<--get set point if its time
+		//HardwareAbstractionLayer::Encoder::get_rpm();//<--check rpm, recalculate if its time
+		//HardwareAbstractionLayer::Inputs::get_set_point();//<--get set point if its time
 		//Spin::Input::Controls.sensed_position = extern_encoder__count;
 		//Spin::Input::Controls.step_counter = extern_input__time_count;
-		Spin::Controller::check_pid_cycle();//<--check if pid time has expired, and update if needed
+		//Spin::Controller::check_pid_cycle();//<--check if pid time has expired, and update if needed
 
-		Spin::Controller::process();//<--General processing. Perhaps an LCD update
+		if (Spin::Output::Controls.enable == Enums::e_drive_states::Enabled)
+		HardwareAbstractionLayer::Outputs::update_output(63750);
+
+		//Spin::Controller::process();//<--General processing. Perhaps an LCD update
 	}
 }
 
@@ -86,12 +123,21 @@ void Spin::Controller::sync_out_in_control()
 		a complete stop
 		*/
 		//Are we commanded to stop?
-		if (Spin::Input::Controls.enable == Spin::Enums::e_drive_states::Disabled
-		 && !Spin::Configuration::Drive_Settings.Hard_Stop_On_Disable)
-		{
-			//Are soft stops active?
-			Spin::Output::set_direction(Enums::e_directions::Free);
-		}
+		//if (Spin::Input::Controls.enable == Spin::Enums::e_drive_states::Disabled
+		//&& !Spin::Configuration::Drive_Settings.Hard_Stop_On_Disable)
+		//{
+			//Spin::Input::Controls.direction = Enums::e_directions::Free;
+		//}
+	}
+	
+	//Set the output mode to the mode specified by input
+	if (Spin::Input::Controls.direction != Spin::Output::Controls.direction)
+	{
+		
+		
+		//If mode changes we also need to reset the PID control.
+		//set_mode will do that for us
+		Spin::Output::set_direction(Spin::Input::Controls.direction);
 	}
 
 	//Set the output mode to the mode specified by input
@@ -105,6 +151,7 @@ void Spin::Controller::sync_out_in_control()
 	//Synch outputs enable state to input state
 	if (Spin::Input::Controls.enable != Spin::Output::Controls.enable)
 	{
+		
 		//Start/stop pwm output pin, and stop/start pwm signal
 		Spin::Output::set_drive_state(Spin::Input::Controls.enable);
 	}
@@ -206,14 +253,14 @@ void Spin::Controller::process()
 		Spin::Controller::host_serial.print_int32(Spin::Input::Controls.target);
 		Spin::Controller::host_serial.print_string(" err:");
 		Spin::Controller::host_serial.print_int32(error_amount);
-		
+		Spin::Controller::host_serial.print_string(" dir:");
+		Spin::Controller::host_serial.print_int32((int)Spin::Input::Controls.direction);
 		
 		if (Spin::Output::active_pid_mode !=NULL)
 		{
 			Spin::Controller::host_serial.print_string(" p_pid:");
 			Spin::Controller::host_serial.print_int32(Spin::Output::active_pid_mode->pid_calc.output);
-			Spin::Controller::host_serial.print_string(" dir:");
-			Spin::Controller::host_serial.print_int32((int)Spin::Output::active_pid_mode->control_direction);
+			
 		}
 
 		if (Spin::Controller::host_serial.HasEOL())

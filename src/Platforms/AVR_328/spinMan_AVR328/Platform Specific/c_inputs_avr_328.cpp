@@ -63,9 +63,9 @@ void HardwareAbstractionLayer::Inputs::configure()
 	//Set pins on port for inputs
 	CONTROl_PORT_DIRECTION &= ~((1 << DIRECTION_PIN) | (1 << MODE_PIN_A) | (1 << MODE_PIN_B) | (1<<ENABLE_PIN));
 	//Enable pull ups
-	CONTROl_PORT |= (1<<DIRECTION_PIN)|(1<<MODE_PIN_A) |(1<<MODE_PIN_B) |(1<<ENABLE_PIN);
+	CONTROl_PORT |= ((1<<DIRECTION_PIN)|(1<<MODE_PIN_A) |(1<<MODE_PIN_B) |(1<<ENABLE_PIN));
 	//Set the mask to check pins PB0-PB5
-	PCMSK1 = (1<<PCINT8)|(1<<PCINT9)|(1<<PCINT10)|(1<<PCINT11);
+	PCMSK1 = ((1<<PCINT8)|(1<<PCINT9)|(1<<PCINT10)|(1<<PCINT11));
 	
 	//Set the interrupt for PORTC (PCIE1)
 	PCICR |= (1<<PCIE1);
@@ -77,7 +77,7 @@ void HardwareAbstractionLayer::Inputs::configure()
 void HardwareAbstractionLayer::Inputs::synch_hardware_inputs()
 {
 	//This method is called by the main program, and doesnt know which
-	//port or pins to read, so it grabs it and passed it to the overlaoded
+	//port or pins to read, so it grabs it and passes it to the overlaoded
 	//version
 	uint8_t current = CONTROL_PORT_PIN_ADDRESS ;
 	HardwareAbstractionLayer::Inputs::synch_hardware_inputs(current);
