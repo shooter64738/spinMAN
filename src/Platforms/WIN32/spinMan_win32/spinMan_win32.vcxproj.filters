@@ -1,9 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClCompile Include="..\..\..\c_controller.cpp" />
-    <ClCompile Include="..\..\..\c_input.cpp" />
-    <ClCompile Include="..\..\..\c_output.cpp" />
     <ClCompile Include="..\..\..\main.cpp" />
     <ClCompile Include="Platform Specific\c_encoder_win.cpp">
       <Filter>Platform Specific</Filter>
@@ -23,14 +20,32 @@
     <ClCompile Include="..\..\..\Serial\c_Serial.cpp">
       <Filter>Serial</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\c_configuration.cpp" />
-    <ClCompile Include="..\..\..\c_enumerations.cpp" />
-    <ClCompile Include="..\..\..\c_pid.cpp" />
+    <ClCompile Include="..\..\..\closed loop\c_pid.cpp">
+      <Filter>closed loop</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\closed loop\c_position.cpp">
+      <Filter>closed loop</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\closed loop\c_velocity.cpp">
+      <Filter>closed loop</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\core\c_configuration.cpp">
+      <Filter>core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\core\c_enumerations.cpp">
+      <Filter>core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\driver\c_controller.cpp">
+      <Filter>driver</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\driver\c_input.cpp">
+      <Filter>driver</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\driver\c_output.cpp">
+      <Filter>driver</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\c_controller.h" />
-    <ClInclude Include="..\..\..\c_input.h" />
-    <ClInclude Include="..\..\..\c_output.h" />
     <ClInclude Include="..\..\..\hardware_def.h" />
     <ClInclude Include="Platform Specific\c_encoder_win.h">
       <Filter>Platform Specific</Filter>
@@ -54,10 +69,37 @@
       <Filter>Serial</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\communication_def.h" />
-    <ClInclude Include="..\..\..\c_configuration.h" />
     <ClInclude Include="..\..\..\bit_manipulation.h" />
-    <ClInclude Include="..\..\..\c_enumerations.h" />
-    <ClInclude Include="..\..\..\c_pid.h" />
+    <ClInclude Include="..\..\..\closed loop\c_pid.h">
+      <Filter>closed loop</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\closed loop\c_position.h">
+      <Filter>closed loop</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\closed loop\c_velocity.h">
+      <Filter>closed loop</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\core\c_configuration.h">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\core\c_enumerations.h">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\driver\c_controller.h">
+      <Filter>driver</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\driver\c_input.h">
+      <Filter>driver</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\driver\c_output.h">
+      <Filter>driver</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\driver\volatile_encoder_externs.h">
+      <Filter>driver</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\driver\volatile_input_externs.h">
+      <Filter>driver</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Platform Specific">
@@ -65,6 +107,15 @@
     </Filter>
     <Filter Include="Serial">
       <UniqueIdentifier>{f6393046-8a2c-4946-94d2-90262e95b07b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="closed loop">
+      <UniqueIdentifier>{32dd4f82-240b-4095-8994-a39fbf12ba97}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="core">
+      <UniqueIdentifier>{af495210-2f56-462d-9922-2a2c25cd7eca}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="driver">
+      <UniqueIdentifier>{f346c4f4-bc19-4a80-8ca2-a430a88c83ff}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

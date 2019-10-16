@@ -1,12 +1,12 @@
 #include "c_inputs_win.h"
-#include "../../../../c_input.h"
-#include "../../../../c_controller.h"
-#include "../../../../c_configuration.h"
+#include "../../../../driver/c_input.h"
+#include "../../../../driver/c_controller.h"
+#include "../../../../core/c_configuration.h"
 #include "../../../../bit_manipulation.h"
 #include "../../../../bit_manipulation.h"
-#include "../../../../volatile_encoder_externs.h"
+#include "../../../../driver/volatile_encoder_externs.h"
 #define __INPUT_VOLATILES__
-#include "../../../../volatile_input_externs.h"
+#include "../../../../driver/volatile_input_externs.h"
 
 static const int8_t encoder_table[] = { 0, -1, 1, 0, 1, 0, 0, -1, -1, 0, 0, 1, 0, 1, -1, 0 };
 static uint8_t enc_val = 0;

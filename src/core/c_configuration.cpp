@@ -7,12 +7,12 @@
 
 
 #include "c_configuration.h"
-#include "hardware_def.h"
-#include "bit_manipulation.h"
-#include "c_input.h"
-#include "c_controller.h"
-#include "volatile_encoder_externs.h"
-#include "volatile_input_externs.h"
+#include "../hardware_def.h"
+#include "../bit_manipulation.h"
+#include "../driver/c_input.h"
+#include "../driver/c_controller.h"
+#include "../driver/volatile_encoder_externs.h"
+#include "../driver/volatile_input_externs.h"
 
 
 
@@ -133,8 +133,8 @@ Spin::Enums::e_config_results Spin::Configuration::_config_encoder()
 	//This interval bit is set by a timer, so we just
 	//set and wait for it.
 	
-	//Spin::Controller::host_serial.print_string("chans:");
-	//Spin::Controller::host_serial.print_int32(extern_encoder__active_channels);
+	//Spin::Driver::Controller::host_serial.print_string("chans:");
+	//Spin::Driver::Controller::host_serial.print_int32(extern_encoder__active_channels);
 	spindle_encoder.active_channels = 0;
 	for (int i=0;i<6;i++)
 	//while(1)
@@ -151,10 +151,10 @@ Spin::Enums::e_config_results Spin::Configuration::_config_encoder()
 			break;
 		}
 		extern_input__intervals &= ~(1<<ONE_INTERVAL_BIT);
-		Spin::Controller::host_serial.print_string("=");
+		Spin::Driver::Controller::host_serial.print_string("=");
 		//extern_encoder__active_channels = 0;
 	}
-	Spin::Controller::host_serial.print_string(">\r");
+	Spin::Driver::Controller::host_serial.print_string(">\r");
 	if (spindle_encoder.active_channels == 0 )
 	{
 		write_message("ENC_NON\r\n\0");
@@ -183,37 +183,37 @@ Spin::Enums::e_config_results Spin::Configuration::_config_encoder()
 	//Now that the encoder type is known we can set the pointer for the isrs to call when something happens
 	
 
-	Spin::Controller::host_serial.print_string("ENC_CHN:");
+	Spin::Driver::Controller::host_serial.print_string("ENC_CHN:");
 	//This will cover most encoders, but I handle quadrature and quadrature with index different
 	if (spindle_encoder.active_channels & ENC_CHA_TRK_BIT)
 	{
 		spindle_encoder.func_vectors.Encoder_Vector_A = HardwareAbstractionLayer::Encoder::read_cha;
-		Spin::Controller::host_serial.print_string("A");
+		Spin::Driver::Controller::host_serial.print_string("A");
 	}
 	if (spindle_encoder.active_channels & ENC_CHB_TRK_BIT)
 	{
 		spindle_encoder.func_vectors.Encoder_Vector_B = HardwareAbstractionLayer::Encoder::read_chb;
-		Spin::Controller::host_serial.print_string("B");
+		Spin::Driver::Controller::host_serial.print_string("B");
 	}
 	if (spindle_encoder.active_channels & ENC_CHZ_TRK_BIT)
 	{
 		spindle_encoder.func_vectors.Encoder_Vector_Z = HardwareAbstractionLayer::Encoder::read_chz;
-		Spin::Controller::host_serial.print_string("Z");
+		Spin::Driver::Controller::host_serial.print_string("Z");
 	}
 	//Special handler for quadrature because they report direction too.
 	if (Configuration::Drive_Settings.Encoder_Config.Encoder_Mode == Spin::Enums::e_encoder_modes::Quadrature
 	|| Configuration::Drive_Settings.Encoder_Config.Encoder_Mode == Spin::Enums::e_encoder_modes::Quadrature_wIndex)
 	{
-		Spin::Controller::host_serial.print_string(" QD");
+		Spin::Driver::Controller::host_serial.print_string(" QD");
 		spindle_encoder.func_vectors.Encoder_Vector_A = HardwareAbstractionLayer::Encoder::read_quad;
 		spindle_encoder.func_vectors.Encoder_Vector_B = HardwareAbstractionLayer::Encoder::read_quad;
 		if (Configuration::Drive_Settings.Encoder_Config.Encoder_Mode == Spin::Enums::e_encoder_modes::Quadrature_wIndex)
 		{
 			spindle_encoder.func_vectors.Encoder_Vector_B = HardwareAbstractionLayer::Encoder::read_chz;
-			Spin::Controller::host_serial.print_string(" I");
+			Spin::Driver::Controller::host_serial.print_string(" I");
 		}
 	}
-	Spin::Controller::host_serial.print_string("\r\n");
+	Spin::Driver::Controller::host_serial.print_string("\r\n");
 	//now ask the user for the PPR value.
 	Drive_Settings.Encoder_Config.Encoder_Ticks_Per_Rev = 0;
 	while (Drive_Settings.Encoder_Config.Encoder_Ticks_Per_Rev == 0)
@@ -232,7 +232,7 @@ Spin::Enums::e_config_results Spin::Configuration::_config_encoder()
 	
 	//Clear the encoder position
 	spindle_encoder.position = 0;
-	Spin::Controller::host_serial.print_string("ENC_DIR\r");
+	Spin::Driver::Controller::host_serial.print_string("ENC_DIR\r");
 	//extern_encoder__direction = 0;
 	
 	//set output to current
@@ -255,14 +255,14 @@ Spin::Enums::e_config_results Spin::Configuration::_config_encoder()
 			break;
 		}
 		extern_input__intervals &= ~(1<<ONE_INTERVAL_BIT);
-		Spin::Controller::host_serial.print_string("=");
+		Spin::Driver::Controller::host_serial.print_string("=");
 		//extern_encoder__active_channels = 0;
 	}
 	HardwareAbstractionLayer::Outputs::disable_output();
-	Spin::Controller::host_serial.print_string(">\r");
-	Spin::Controller::host_serial.print_string("ENC_DIR:");
-	Spin::Controller::host_serial.print_int32(spindle_encoder.direction);
-	Spin::Controller::host_serial.print_string("DIR_FWD\r");
+	Spin::Driver::Controller::host_serial.print_string(">\r");
+	Spin::Driver::Controller::host_serial.print_string("ENC_DIR:");
+	Spin::Driver::Controller::host_serial.print_int32(spindle_encoder.direction);
+	Spin::Driver::Controller::host_serial.print_string("DIR_FWD\r");
 	write_message("ENC_OK\r\n\0");
 	
 	
@@ -273,12 +273,12 @@ Spin::Enums::e_config_results Spin::Configuration::_config_encoder()
 
 void Spin::Configuration::write_message(char * message)
 {
-	Spin::Controller::host_serial.print_string(message);
-	while(!Spin::Controller::host_serial.HasEOL())
+	Spin::Driver::Controller::host_serial.print_string(message);
+	while(!Spin::Driver::Controller::host_serial.HasEOL())
 	{
 	}
-	Spin::Controller::host_serial.SkipToEOL();
-	Spin::Controller::host_serial.Reset();
+	Spin::Driver::Controller::host_serial.SkipToEOL();
+	Spin::Driver::Controller::host_serial.Reset();
 }
 char* Spin::Configuration::input_char()
 {
@@ -288,28 +288,28 @@ char* Spin::Configuration::input_char()
 int32_t Spin::Configuration::input_int32(char * message)
 {
 	write_message(message);
-	while(!Spin::Controller::host_serial.HasEOL())
+	while(!Spin::Driver::Controller::host_serial.HasEOL())
 	{
-		if (Spin::Controller::host_serial.HasEOL())
+		if (Spin::Driver::Controller::host_serial.HasEOL())
 		{
 			char  num[INPUT_NUM_SIZE];
 			char * _num;
 			_num = num;
 			memcpy(num,0,sizeof(int32_t));
-			num[0] = Spin::Controller::host_serial.Get();
+			num[0] = Spin::Driver::Controller::host_serial.Get();
 			
 			for (int i = 1; i < INPUT_NUM_SIZE; i++)
 			{
-				if (Spin::Controller::host_serial.Peek() == 13
-				|| Spin::Controller::host_serial.Peek() == 10)
+				if (Spin::Driver::Controller::host_serial.Peek() == 13
+				|| Spin::Driver::Controller::host_serial.Peek() == 10)
 				{
-					Spin::Controller::host_serial.SkipToEOL();
-					Spin::Controller::host_serial.Reset();
+					Spin::Driver::Controller::host_serial.SkipToEOL();
+					Spin::Driver::Controller::host_serial.Reset();
 					break; // break the for loop
 				}
-				if (Spin::Controller::host_serial.Peek() == '\\') //user canceled input
+				if (Spin::Driver::Controller::host_serial.Peek() == '\\') //user canceled input
 				return -1;
-				num[i] = Spin::Controller::host_serial.Get();
+				num[i] = Spin::Driver::Controller::host_serial.Get();
 			}
 			int32_t _var = 0;
 			_var = atoi(_num);

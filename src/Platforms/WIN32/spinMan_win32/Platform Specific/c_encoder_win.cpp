@@ -1,10 +1,10 @@
 #include "c_encoder_win.h"
 #include "c_inputs_win.h"
-#include "../../../..\c_input.h"
-#include "../../../..\bit_manipulation.h"
-#include "../../../../volatile_input_externs.h"
+#include "../../../../driver/c_input.h"
+#include "../../../../bit_manipulation.h"
+#include "../../../../driver/volatile_input_externs.h"
 #define __ENCODER_VOLATILES__
-#include "../../../../volatile_encoder_externs.h"
+#include "../../../../driver/volatile_encoder_externs.h"
 
 static const int8_t encoder_table[] = { 0, -1, 1, 0, 1, 0, 0, -1, -1, 0, 0, 1, 0, 1, -1, 0 };
 

@@ -9,11 +9,11 @@
 #ifndef __C_OUTPUT_H__
 #define __C_OUTPUT_H__
 
-#include "hardware_def.h"
-#include "Serial\c_Serial.h"
+#include "../hardware_def.h"
+#include "../Serial/c_Serial.h"
 #include <stdint.h>
 #include <math.h>
-#include "c_enumerations.h"
+#include "../core/c_enumerations.h"
 
 
 #define MAX_LONG INT32_MAX
@@ -36,7 +36,7 @@ namespace Spin
 		struct s_pid_terms
 		{
 			int32_t kP, kI, kD, proportional, integral, derivative
-			, maxSumError, sumError, preError, MAX_INT;
+			, maxSumError, sumError, preError;//, MAX_INT;
 			int32_t max, min, maxError;
 			uint8_t invert_output, resolution= 100;
 
@@ -46,7 +46,7 @@ namespace Spin
 			
 			void reset()
 			{
-				MAX_INT = INT16_MAX;
+				//MAX_INT = INT16_MAX;
 				kP = 0;
 				kI = 0;
 				kD = 0;
@@ -73,7 +73,7 @@ namespace Spin
 
 			void initialize()
 			{
-				maxError = MAX_INT / (kP + 1);
+				maxError = INT16_MAX / (kP + 1);
 				maxSumError = MAX_I_TERM / (kI + 1);
 			}
 
@@ -91,10 +91,10 @@ namespace Spin
 
 				// Calculate Pterm and limit error overflow
 				if (pid_calc->errors > maxError) {
-					pid_calc->p_term = MAX_INT;
+					pid_calc->p_term = INT16_MAX;
 				}
 				else if (pid_calc->errors < -maxError) {
-					pid_calc->p_term = -MAX_INT;
+					pid_calc->p_term = -INT16_MAX;
 				}
 				else {
 					pid_calc->p_term = kP * pid_calc->errors;
@@ -175,11 +175,11 @@ namespace Spin
 				pid_calc.output = _clamp_output(pid_calc.output);
 
 				//if we are in velcotu mode the +/- values mean to speed up or slow down
-				//if (control_mode == Spin::Controller::e_drive_modes::Position)
+				//if (control_mode == Spin::Driver::Controller::e_drive_modes::Position)
 				//{
 				//}
 				//if we are in position mode the +/- values mean to change motor directions
-				//if (control_mode == Spin::Controller::e_drive_modes::Position)
+				//if (control_mode == Spin::Driver::Controller::e_drive_modes::Position)
 				{
 					/*
 					IF a direction change is made we must:
@@ -191,11 +191,11 @@ namespace Spin
 					Not to mention the tremendous load placed on the H-Bridge driver. 
 					*/
 					//calculation shows we need to rotate motor backward. are we already going backward?
-					//if (pid_calc.errors_direction < 0 && control_direction == Spin::Controller::e_directions::Forward)
+					//if (pid_calc.errors_direction < 0 && control_direction == Spin::Driver::Controller::e_directions::Forward)
 					//{
 					//
 						////set motor direction to reverse
-						//control_direction = Spin::Controller::e_directions::Reverse;
+						//control_direction = Spin::Driver::Controller::e_directions::Reverse;
 						//
 						////if we have changed directions reset the integral, or we have to wait for it to unwind
 						//reset_integral();
@@ -206,10 +206,10 @@ namespace Spin
 //
 					//}
 					////calculation shows we need to rotate motor forward. are we already going forward?
-					//if (pid_calc.errors_direction > 0 && control_direction == Spin::Controller::e_directions::Reverse)
+					//if (pid_calc.errors_direction > 0 && control_direction == Spin::Driver::Controller::e_directions::Reverse)
 					//{
 						////set motor direction to reverse
-						//control_direction = Spin::Controller::e_directions::Forward;
+						//control_direction = Spin::Driver::Controller::e_directions::Forward;
 						//
 						////if we have changed directions reset the integral, or we have to wait for it to unwind
 						//reset_integral();

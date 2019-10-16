@@ -11,12 +11,14 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\c_configuration.cpp" />
-    <ClCompile Include="..\..\..\c_controller.cpp" />
-    <ClCompile Include="..\..\..\c_enumerations.cpp" />
-    <ClCompile Include="..\..\..\c_input.cpp" />
-    <ClCompile Include="..\..\..\c_output.cpp" />
-    <ClCompile Include="..\..\..\c_pid.cpp" />
+    <ClCompile Include="..\..\..\closed loop\c_pid.cpp" />
+    <ClCompile Include="..\..\..\closed loop\c_position.cpp" />
+    <ClCompile Include="..\..\..\closed loop\c_velocity.cpp" />
+    <ClCompile Include="..\..\..\core\c_configuration.cpp" />
+    <ClCompile Include="..\..\..\core\c_enumerations.cpp" />
+    <ClCompile Include="..\..\..\driver\c_controller.cpp" />
+    <ClCompile Include="..\..\..\driver\c_input.cpp" />
+    <ClCompile Include="..\..\..\driver\c_output.cpp" />
     <ClCompile Include="..\..\..\main.cpp" />
     <ClCompile Include="..\..\..\Serial\c_Serial.cpp" />
     <ClCompile Include="Platform Specific\c_core_win.cpp" />
@@ -27,13 +29,17 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\bit_manipulation.h" />
+    <ClInclude Include="..\..\..\closed loop\c_pid.h" />
+    <ClInclude Include="..\..\..\closed loop\c_position.h" />
+    <ClInclude Include="..\..\..\closed loop\c_velocity.h" />
     <ClInclude Include="..\..\..\communication_def.h" />
-    <ClInclude Include="..\..\..\c_configuration.h" />
-    <ClInclude Include="..\..\..\c_controller.h" />
-    <ClInclude Include="..\..\..\c_enumerations.h" />
-    <ClInclude Include="..\..\..\c_input.h" />
-    <ClInclude Include="..\..\..\c_output.h" />
-    <ClInclude Include="..\..\..\c_pid.h" />
+    <ClInclude Include="..\..\..\core\c_configuration.h" />
+    <ClInclude Include="..\..\..\core\c_enumerations.h" />
+    <ClInclude Include="..\..\..\driver\c_controller.h" />
+    <ClInclude Include="..\..\..\driver\c_input.h" />
+    <ClInclude Include="..\..\..\driver\c_output.h" />
+    <ClInclude Include="..\..\..\driver\volatile_encoder_externs.h" />
+    <ClInclude Include="..\..\..\driver\volatile_input_externs.h" />
     <ClInclude Include="..\..\..\hardware_def.h" />
     <ClInclude Include="..\..\..\Serial\c_Serial.h" />
     <ClInclude Include="..\..\..\Serial\s_buffer.h" />

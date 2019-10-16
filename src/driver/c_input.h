@@ -13,10 +13,10 @@
 
 
 
-#include "Serial\c_Serial.h"
+#include "../Serial/c_Serial.h"
 #include <stdint.h>
-
-#include "c_enumerations.h"
+#include "../hardware_def.h"
+#include "../core/c_enumerations.h"
 
 
 #define TIMER_PRESCALE_MASK (1<<CS22) | (1<<CS20);  // set prescale factor of counter2 to 128 (16MHz/128 = 125000Hz)

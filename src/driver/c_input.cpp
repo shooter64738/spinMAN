@@ -7,7 +7,7 @@
 
 
 #include "c_input.h"
-#include "hardware_def.h"
+
 #include "c_controller.h"
 
 
@@ -25,7 +25,7 @@ volatile uint8_t step_old_states = 255;
 void Spin::Input::check_input_states()
 {
 	HardwareAbstractionLayer::Inputs::synch_hardware_inputs();
-	//Spin::Controller::sync_out_in_control();
+	//Spin::Driver::Controller::sync_out_in_control();
 }
 
 
@@ -36,5 +36,5 @@ void Spin::Input::initialize()
 	
 	Spin::Input::check_input_states();
 	
-	Spin::Controller::host_serial.print_string("input initialized\r\n");//<-- Send hello message
+	Spin::Driver::Controller::host_serial.print_string("input initialized\r\n");//<-- Send hello message
 }

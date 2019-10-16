@@ -9,11 +9,12 @@
 #include "c_controller.h"
 #include "c_input.h"
 #include "c_output.h"
-#include "c_configuration.h"
-#include "c_enumerations.h"
-#include "bit_manipulation.h"
+#include "../core/c_configuration.h"
+#include "../core/c_enumerations.h"
+#include "../bit_manipulation.h"
 #include "volatile_encoder_externs.h"
 #include "volatile_input_externs.h"
+#include "../closed loop/c_pid.h"
 
 
 //#define DEBUG_AVR
@@ -23,16 +24,17 @@
 #define DEBUG_WIN32
 #endif
 
-c_Serial Spin::Controller::host_serial;
+c_Serial Spin::Driver::Controller::host_serial;
 
-//uint8_t Spin::Controller::pid_interval = 0;
-//uint8_t Spin::Controller::one_interval = 0;
+//uint8_t Spin::Driver::Controller::pid_interval = 0;
+//uint8_t Spin::Driver::Controller::one_interval = 0;
 static uint16_t user_pos = 0;
 static int32_t error_amount = 0;
-void Spin::Controller::initialize()
+
+void Spin::Driver::Controller::initialize()
 {
-	Spin::Controller::host_serial = c_Serial(0, 115200);//<-- Start serial at 115,200 baud on port 0
-	Spin::Controller::host_serial.print_string("proto type\r\n");//<-- Send hello message
+	Spin::Driver::Controller::host_serial = c_Serial(0, 115200);//<-- Start serial at 115,200 baud on port 0
+	Spin::Driver::Controller::host_serial.print_string("proto type\r\n");//<-- Send hello message
 
 
 
@@ -45,14 +47,15 @@ void Spin::Controller::initialize()
 	
 	Spin::Output::initialize();
 	
-	Spin::Controller::sync_out_in_control();
+	Spin::Driver::Controller::sync_out_in_control();
 	
 	//set the direction specified by the input pins
 	Spin::Output::set_direction(Spin::Input::Controls.direction);
+	Spin::ClosedLoop::Pid::Set_Factors(Configuration::PID_Tuning.Velocity);
 
 }
 //63800 starts motor
-void Spin::Controller::run()
+void Spin::Driver::Controller::run()
 {
 	user_pos = 2000;
 	
@@ -60,23 +63,23 @@ void Spin::Controller::run()
 	{
 
 		HardwareAbstractionLayer::Inputs::synch_hardware_inputs();//<--read input states from hardware
-		Spin::Controller::sync_out_in_control();//<--synch input/output control states
+		Spin::Driver::Controller::sync_out_in_control();//<--synch input/output control states
 		HardwareAbstractionLayer::Encoder::get_rpm();//<--check rpm, recalculate if its time
 		//HardwareAbstractionLayer::Inputs::get_set_point();//<--get set point if its time
 		//Spin::Input::Controls.sensed_position = extern_encoder__count;
 		//Spin::Input::Controls.step_counter = extern_input__time_count;
-		Spin::Controller::check_pid_cycle();//<--check if pid time has expired, and update if needed
+		Spin::Driver::Controller::check_pid_cycle();//<--check if pid time has expired, and update if needed
 
 		//if (Spin::Output::Controls.enable == Enums::e_drive_states::Enabled)
 		{
 			//HardwareAbstractionLayer::Outputs::update_output(62500);
 
-			Spin::Controller::process();//<--General processing. Perhaps an LCD update
+			Spin::Driver::Controller::process();//<--General processing. Perhaps an LCD update
 		}
 	}
 }
 
-void Spin::Controller::sync_out_in_control()
+void Spin::Driver::Controller::sync_out_in_control()
 {
 	
 	if (Spin::Input::Controls.enable != Spin::Output::Controls.enable)
@@ -121,7 +124,7 @@ void Spin::Controller::sync_out_in_control()
 	
 }
 
-void Spin::Controller::check_pid_cycle()
+void Spin::Driver::Controller::check_pid_cycle()
 {
 
 	if (!BitTst(extern_input__intervals,PID_INTERVAL_BIT))
@@ -138,10 +141,8 @@ void Spin::Controller::check_pid_cycle()
 			{
 				//update input value
 				Spin::Input::Controls.target = user_pos;
-				//Spin::Input::Controls.target = extern_input__time_count;
-				//set the direction specified by the input pins
-				//Spin::Output::set_direction(Spin::Input::Controls.direction);
 				Spin::Output::active_pid_mode->get_pid(Spin::Input::Controls.target, spindle_encoder.sensed_rpm);
+				Spin::ClosedLoop::Pid::Calculate(Spin::Input::Controls.target, spindle_encoder.sensed_rpm);
 				break;
 			}
 			case Enums::e_drive_modes::Position:
@@ -184,18 +185,18 @@ void Spin::Controller::check_pid_cycle()
 		if (Spin::Output::active_pid_mode != NULL)
 		HardwareAbstractionLayer::Outputs::update_output(Spin::Output::active_pid_mode->pid_calc.output);
 		else
-		Spin::Controller::host_serial.print_string(" PID select error\r\n");
+		Spin::Driver::Controller::host_serial.print_string(" PID select error\r\n");
 	}
 	else
 	{
 		#ifdef DEBUG_AVR
-		Spin::Controller::host_serial.print_string(" pid not active\r\n");
+		Spin::Driver::Controller::host_serial.print_string(" pid not active\r\n");
 		#endif
 	}
 
 }
 
-void Spin::Controller::process()
+void Spin::Driver::Controller::process()
 {
 
 
@@ -203,34 +204,34 @@ void Spin::Controller::process()
 	{
 		BitClr_(extern_input__intervals, RPT_INTERVAL_BIT);
 
-		Spin::Controller::host_serial.print_string(" mod:");
-		Spin::Controller::host_serial.print_int32((int)Spin::Input::Controls.in_mode);
-		Spin::Controller::host_serial.print_string(" ena:");
-		Spin::Controller::host_serial.print_int32((int)Spin::Input::Controls.enable);
-		Spin::Controller::host_serial.print_string(" rpm:");
-		Spin::Controller::host_serial.print_int32(spindle_encoder.sensed_rpm);
-		Spin::Controller::host_serial.print_string(" pos:");
-		Spin::Controller::host_serial.print_int32(spindle_encoder.position);
-		Spin::Controller::host_serial.print_string(" trg:");
-		Spin::Controller::host_serial.print_int32(Spin::Input::Controls.target);
-		Spin::Controller::host_serial.print_string(" err:");
-		Spin::Controller::host_serial.print_int32(error_amount);
-		Spin::Controller::host_serial.print_string(" dir:");
-		Spin::Controller::host_serial.print_int32((int)Spin::Input::Controls.direction);
+		Spin::Driver::Controller::host_serial.print_string(" mod:");
+		Spin::Driver::Controller::host_serial.print_int32((int)Spin::Input::Controls.in_mode);
+		Spin::Driver::Controller::host_serial.print_string(" ena:");
+		Spin::Driver::Controller::host_serial.print_int32((int)Spin::Input::Controls.enable);
+		Spin::Driver::Controller::host_serial.print_string(" rpm:");
+		Spin::Driver::Controller::host_serial.print_int32(spindle_encoder.sensed_rpm);
+		Spin::Driver::Controller::host_serial.print_string(" pos:");
+		Spin::Driver::Controller::host_serial.print_int32(spindle_encoder.position);
+		Spin::Driver::Controller::host_serial.print_string(" trg:");
+		Spin::Driver::Controller::host_serial.print_int32(Spin::Input::Controls.target);
+		Spin::Driver::Controller::host_serial.print_string(" err:");
+		Spin::Driver::Controller::host_serial.print_int32(error_amount);
+		Spin::Driver::Controller::host_serial.print_string(" dir:");
+		Spin::Driver::Controller::host_serial.print_int32((int)Spin::Input::Controls.direction);
 		
 		if (Spin::Output::active_pid_mode !=NULL)
 		{
-			Spin::Controller::host_serial.print_string(" p_pid:");
-			Spin::Controller::host_serial.print_int32(Spin::Output::active_pid_mode->pid_calc.output);
+			Spin::Driver::Controller::host_serial.print_string(" p_pid:");
+			Spin::Driver::Controller::host_serial.print_int32(Spin::Output::active_pid_mode->pid_calc.output);
 			
 		}
 
-		if (Spin::Controller::host_serial.HasEOL())
+		if (Spin::Driver::Controller::host_serial.HasEOL())
 		{
-			uint8_t byte = toupper(Spin::Controller::host_serial.Peek());
+			uint8_t byte = toupper(Spin::Driver::Controller::host_serial.Peek());
 			if (byte == 'P' || byte == 'I' || byte == 'D')
 			{
-				Spin::Controller::host_serial.Get();
+				Spin::Driver::Controller::host_serial.Get();
 
 			}
 
@@ -239,10 +240,10 @@ void Spin::Controller::process()
 			_num = num;
 			for (int i = 0; i < 10; i++)
 			{
-				uint8_t byte = toupper(Spin::Controller::host_serial.Peek());
+				uint8_t byte = toupper(Spin::Driver::Controller::host_serial.Peek());
 				if (byte == 13)
 					break;
-				num[i] = Spin::Controller::host_serial.Get();
+				num[i] = Spin::Driver::Controller::host_serial.Get();
 			}
 			uint16_t p_var = 0;
 			p_var = atoi(_num);
@@ -251,37 +252,37 @@ void Spin::Controller::process()
 			if (byte == 'P')
 			{
 				Spin::Configuration::PID_Tuning.Position.Kp = p_var;
-				Spin::Controller::host_serial.print_string(" pid P:");
-				Spin::Controller::host_serial.print_int32(p_var);
+				Spin::Driver::Controller::host_serial.print_string(" pid P:");
+				Spin::Driver::Controller::host_serial.print_int32(p_var);
 				Spin::Output::set_pid_values();
 			}
 			else if (byte == 'I')
 			{
 				Spin::Configuration::PID_Tuning.Position.Ki = p_var;
-				Spin::Controller::host_serial.print_string(" pid I:");
-				Spin::Controller::host_serial.print_int32(p_var);
+				Spin::Driver::Controller::host_serial.print_string(" pid I:");
+				Spin::Driver::Controller::host_serial.print_int32(p_var);
 				Spin::Output::set_pid_values();
 			}
 			else if (byte == 'D')
 			{
 				Spin::Configuration::PID_Tuning.Position.Kd = p_var;
-				Spin::Controller::host_serial.print_string(" pid D:");
-				Spin::Controller::host_serial.print_int32(p_var);
+				Spin::Driver::Controller::host_serial.print_string(" pid D:");
+				Spin::Driver::Controller::host_serial.print_int32(p_var);
 				Spin::Output::set_pid_values();
 			}
 			else
 			{
 				user_pos = p_var;
-				Spin::Controller::host_serial.print_string(" usr:");
-				Spin::Controller::host_serial.print_int32(user_pos);
+				Spin::Driver::Controller::host_serial.print_string(" usr:");
+				Spin::Driver::Controller::host_serial.print_int32(user_pos);
 			}
-			Spin::Controller::host_serial.SkipToEOL();
+			Spin::Driver::Controller::host_serial.SkipToEOL();
 
 
-			Spin::Controller::host_serial.Reset();
+			Spin::Driver::Controller::host_serial.Reset();
 		}
 
-		Spin::Controller::host_serial.print_string("\r\n");
+		Spin::Driver::Controller::host_serial.print_string("\r\n");
 
 	}
 

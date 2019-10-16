@@ -1,11 +1,11 @@
 #include "c_inputs_avr_328.h"
-#include "../../../../c_input.h"
-#include "../../../../c_controller.h"
-#include "../../../../c_configuration.h"
+#include "../../../../driver/c_input.h"
+#include "../../../../driver/c_controller.h"
+#include "../../../../core/c_configuration.h"
 #include "../../../../bit_manipulation.h"
-#include "..\..\..\..\volatile_encoder_externs.h"
+#include "../../../../driver/volatile_encoder_externs.h"
 #define __INPUT_VOLATILES__
-#include "..\..\..\..\volatile_input_externs.h"
+#include "../../../../driver/volatile_input_externs.h"
 
 volatile uint32_t local_overflow_accumulator = 0;
 

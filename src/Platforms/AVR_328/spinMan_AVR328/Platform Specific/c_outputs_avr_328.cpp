@@ -1,5 +1,5 @@
 #include "c_outputs_avr_328.h"
-#include "..\..\..\..\c_configuration.h"
+#include "../../../../core/c_configuration.h"
 
 //#define OUT_TCCRA TCCR1A
 //#define OUT_TCCRB TCCR1B

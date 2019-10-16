@@ -1,6 +1,6 @@
 #pragma once
 #include <stdint.h>
-#include "..\..\..\..\c_enumerations.h"
+#include "../../../../core/c_enumerations.h"
 namespace HardwareAbstractionLayer
 {
 	class Outputs

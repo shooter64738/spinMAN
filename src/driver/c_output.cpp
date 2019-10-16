@@ -7,8 +7,7 @@
 
 
 #include "c_output.h"
-#include "hardware_def.h"
-#include "c_configuration.h"
+#include "../core/c_configuration.h"
 #include "c_controller.h"
 
 Spin::Output::s_flags Spin::Output::Controls;
@@ -17,8 +16,8 @@ Spin::Output::s_pid_terms Spin::Output::as_position;
 Spin::Output::s_pid_terms Spin::Output::as_velocity;
 Spin::Output::s_pid_terms Spin::Output::as_torque;
 Spin::Output::s_pid_terms * Spin::Output::active_pid_mode;
-//Spin::Controller::e_drive_modes Spin::Output::out_mode;
-//Spin::Controller::e_drive_states Spin::Output::enable;
+//Spin::Driver::Controller::e_drive_modes Spin::Output::out_mode;
+//Spin::Driver::Controller::e_drive_states Spin::Output::enable;
 
 
 void Spin::Output::initialize()
@@ -31,7 +30,7 @@ void Spin::Output::initialize()
 	//Spin::Output::set_direction(Spin::Enums::e_directions::Forward);//<default direction to forward
 
 
-	Spin::Controller::host_serial.print_string("output initialized\r\n");
+	Spin::Driver::Controller::host_serial.print_string("output initialized\r\n");
 
 
 }
@@ -99,8 +98,8 @@ void Spin::Output::set_drive_state(Spin::Enums::e_drive_states state)
 
 void Spin::Output::set_output()
 {
-	//Spin::Controller::host_serial.print_string(" pwm:");
-	//Spin::Controller::host_serial.print_int32(Spin::Output::active_pid_mode->output);
+	//Spin::Driver::Controller::host_serial.print_string(" pwm:");
+	//Spin::Driver::Controller::host_serial.print_int32(Spin::Output::active_pid_mode->output);
 	HardwareAbstractionLayer::Outputs::update_output(abs(Spin::Output::active_pid_mode->pid_calc.output));
 }
 
