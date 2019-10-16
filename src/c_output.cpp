@@ -35,7 +35,7 @@ void Spin::Output::initialize()
 
 
 }
-
+//64178 minimum turn on value.
 void Spin::Output::set_pid_values()
 {
 	Spin::Output::as_position.reset();
@@ -58,7 +58,7 @@ void Spin::Output::set_pid_values()
 	Spin::Output::as_velocity.kP = Spin::Configuration::PID_Tuning.Velocity.Kp * PID_SCALING_FACTOR;
 	Spin::Output::as_velocity.kI = Spin::Configuration::PID_Tuning.Velocity.Ki * PID_SCALING_FACTOR;
 	Spin::Output::as_velocity.kD = Spin::Configuration::PID_Tuning.Velocity.Kd * PID_SCALING_FACTOR;
-	Spin::Output::as_velocity.max = 65535;
+	Spin::Output::as_velocity.max = 64149;
 	Spin::Output::as_velocity.min = 0;
 	Spin::Output::as_velocity.initialize();
 	Spin::Output::as_velocity.control_mode = Spin::Enums::e_drive_modes::Velocity;

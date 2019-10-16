@@ -86,7 +86,7 @@ void Spin::Configuration::load_defaults()
 	Spin::Configuration::User_Settings.Default_Direction = Enums::e_directions::Free;//set to free spin.
 	
 	//Encoder has 100 pulses in a rotation.
-	Spin::Configuration::Drive_Settings.Encoder_Config.Encoder_Ticks_Per_Rev = 100;
+	Spin::Configuration::Drive_Settings.Encoder_Config.Encoder_Ticks_Per_Rev = 400;
 	//If quadrature mode is active the 100 pulses per rotation is multiplied by 4 (quadrature count)
 	Spin::Configuration::Drive_Settings.Encoder_Config.Encoder_Mode = Enums::e_encoder_modes::Quadrature;
 	spindle_encoder.func_vectors.Encoder_Vector_A = HardwareAbstractionLayer::Encoder::read_quad;

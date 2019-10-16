@@ -5,6 +5,7 @@
 	//Whatever cpp defines __ENCODER_VOALTILES__ AND includes this .h file will have veriables defined as below:
 	#define __EXTERN(type,name , value)     type name = value //define it here
 	__EXTERN(uint32_t, tmr_count_ticks, 0);
+	__EXTERN(uint32_t, rpt_count_ticks, 0);
 	__EXTERN(uint16_t, pid_count_ticks, 0);
 	__EXTERN(uint16_t, rpm_count_ticks, 0);
 	__EXTERN(uint16_t, freq_interval, 0);
@@ -15,6 +16,7 @@
 	//Whatever cpp does NOT define __ENCODER_VOALTILES__ but includes this .h file will have externs defined as below:
 	#define __EXTERN(type, name, value)     extern type name; //declare it extern here
 	__EXTERN(uint32_t, tmr_count_ticks, 0);
+	__EXTERN(uint32_t, rpt_count_ticks, 0);
 	__EXTERN(uint16_t, pid_count_ticks, 0);
 	__EXTERN(uint16_t, rpm_count_ticks, 0);
 	__EXTERN(uint16_t, freq_interval, 0);

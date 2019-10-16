@@ -86,21 +86,7 @@ namespace Spin
 			{
 
 				int32_t temp;
-
-				//see if we are within the allowed resolution
-				int16_t res_value = (1.0 /	(float)resolution)*setPoint;
-				//check range
-
 				pid_calc->errors = setPoint - processValue;
-
-				if (abs(pid_calc->errors) < res_value)
-				{
-					pid_calc->errors = 0;
-					processValue = setPoint;
-					pid_calc->output = 0;
-					return;
-				}
-
 				pid_calc->errors_direction = (pid_calc->errors < 0) ? -1 : 1;
 
 				// Calculate Pterm and limit error overflow
@@ -135,11 +121,10 @@ namespace Spin
 				pid_calc->d_term = (kD * (pid_calc->lastProcessValue - processValue));
 
 				pid_calc->lastProcessValue = processValue;
-float f_p = (float)pid_calc->p_term*.1;
-float f_i = (float)pid_calc->i_term*.1;
-float f_d = (float)pid_calc->d_term*.1;
 
-				pid_calc->output = ((f_p + f_i + f_d) / PID_SCALING_FACTOR);
+
+
+				pid_calc->output = ((pid_calc->p_term + pid_calc->i_term + pid_calc->d_term) / PID_SCALING_FACTOR);
 
 			}
 
@@ -173,7 +158,7 @@ float f_d = (float)pid_calc->d_term*.1;
 				//if output is + we are approaching our set point
 
 				//drop the sign from the output
-				output = abs(output);
+				//output = abs(output);
 				if (invert_output)
 					output = max - output;
 
@@ -237,7 +222,7 @@ float f_d = (float)pid_calc->d_term*.1;
 					
 			
 					//put the sign back on the pid value, just cause... 
-					pid_calc.output *= pid_calc.errors_direction;
+					//pid_calc.output = pid_calc.output<0?pid_calc.output*1:pid_calc.output;
 				}
 				return pid_calc.output;
 			}

@@ -54,62 +54,25 @@ void Spin::Controller::initialize()
 //63800 starts motor
 void Spin::Controller::run()
 {
-	//DDRB |= (1<<DDB1);
-	//ICR1 = 65535;
-	//OCR1A = 65535;
-	//TCCR1A = (1 << COM1A1)|(1 << COM1B1);
-	//TCCR1A |= (1 << WGM11);
-	//TCCR1B |= (1 << WGM12)|(1 << WGM13);
-	//TCCR1B |= (1 << CS10);
-	//uint32_t tick=0;
-	////OCR1A --;
-	//Spin::Controller::host_serial.print_string(" wait:");
-	//Spin::Controller::host_serial.print_int32(OCR1A);
-	//Spin::Controller::host_serial.print_string("\r");
-	//Spin::Output::set_direction(Enums::e_directions::Free);
-	//while(1)
-	//{
-		//tick++;
-		//if (tick>5000000)
-		//{
-			//tick = 0;
-			//break;
-		//}
-	//}
-	//while(1)
-	//{
-		//tick++;
-		//if (tick>200000)
-		//{
-			//tick = 0;
-			//OCR1A = 63750;// --;
-			//Spin::Controller::host_serial.print_string(" set dir:");
-			//Spin::Controller::host_serial.print_int32(OCR1A);
-			//Spin::Controller::host_serial.print_string("\r");
-		//}
-		//
-	//}
-	user_pos = 200;
-	spindle_encoder.position = 40;
-
-	
-	//Spin::Input::Controls.in_mode = Spin::Enums::e_drive_modes::Velocity;
+	user_pos = 2000;
 	
 	while (1)
 	{
 
 		HardwareAbstractionLayer::Inputs::synch_hardware_inputs();//<--read input states from hardware
 		Spin::Controller::sync_out_in_control();//<--synch input/output control states
-		//HardwareAbstractionLayer::Encoder::get_rpm();//<--check rpm, recalculate if its time
+		HardwareAbstractionLayer::Encoder::get_rpm();//<--check rpm, recalculate if its time
 		//HardwareAbstractionLayer::Inputs::get_set_point();//<--get set point if its time
 		//Spin::Input::Controls.sensed_position = extern_encoder__count;
 		//Spin::Input::Controls.step_counter = extern_input__time_count;
-		//Spin::Controller::check_pid_cycle();//<--check if pid time has expired, and update if needed
+		Spin::Controller::check_pid_cycle();//<--check if pid time has expired, and update if needed
 
-		if (Spin::Output::Controls.enable == Enums::e_drive_states::Enabled)
-		HardwareAbstractionLayer::Outputs::update_output(63750);
+		//if (Spin::Output::Controls.enable == Enums::e_drive_states::Enabled)
+		{
+			//HardwareAbstractionLayer::Outputs::update_output(62500);
 
-		//Spin::Controller::process();//<--General processing. Perhaps an LCD update
+			Spin::Controller::process();//<--General processing. Perhaps an LCD update
+		}
 	}
 }
 
@@ -177,7 +140,7 @@ void Spin::Controller::check_pid_cycle()
 				Spin::Input::Controls.target = user_pos;
 				//Spin::Input::Controls.target = extern_input__time_count;
 				//set the direction specified by the input pins
-				Spin::Output::set_direction(Spin::Input::Controls.direction);
+				//Spin::Output::set_direction(Spin::Input::Controls.direction);
 				Spin::Output::active_pid_mode->get_pid(Spin::Input::Controls.target, spindle_encoder.sensed_rpm);
 				break;
 			}
@@ -219,7 +182,7 @@ void Spin::Controller::check_pid_cycle()
 			break;
 		}
 		if (Spin::Output::active_pid_mode != NULL)
-		HardwareAbstractionLayer::Outputs::update_output(abs(Spin::Output::active_pid_mode->pid_calc.output));
+		HardwareAbstractionLayer::Outputs::update_output(Spin::Output::active_pid_mode->pid_calc.output);
 		else
 		Spin::Controller::host_serial.print_string(" PID select error\r\n");
 	}
@@ -246,7 +209,6 @@ void Spin::Controller::process()
 		Spin::Controller::host_serial.print_int32((int)Spin::Input::Controls.enable);
 		Spin::Controller::host_serial.print_string(" rpm:");
 		Spin::Controller::host_serial.print_int32(spindle_encoder.sensed_rpm);
-		Spin::Controller::host_serial.print_int32(0);
 		Spin::Controller::host_serial.print_string(" pos:");
 		Spin::Controller::host_serial.print_int32(spindle_encoder.position);
 		Spin::Controller::host_serial.print_string(" trg:");
@@ -272,11 +234,14 @@ void Spin::Controller::process()
 
 			}
 
-			char  num[4]{0, 0, 0, 0};
+			char  num[10]{0, 0, 0, 0,0, 0, 0, 0, 0, 0};
 			char * _num;
 			_num = num;
-			for (int i = 0; i < 3; i++)
+			for (int i = 0; i < 10; i++)
 			{
+				uint8_t byte = toupper(Spin::Controller::host_serial.Peek());
+				if (byte == 13)
+					break;
 				num[i] = Spin::Controller::host_serial.Get();
 			}
 			uint16_t p_var = 0;

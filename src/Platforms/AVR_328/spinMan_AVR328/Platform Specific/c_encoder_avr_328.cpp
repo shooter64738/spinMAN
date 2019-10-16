@@ -152,7 +152,7 @@ void HardwareAbstractionLayer::Encoder::configure_disable_channels()
 	//PCMSK2 &= ~(1<<PCINT19); // disable pin change interrupt pcint19
 
 	//assign function pointers that does nothing. with the isrs disabled
-	//this should have no effect at all. 
+	//this should have no effect at all.
 
 	spindle_encoder.func_vectors.Encoder_Vector_A = HardwareAbstractionLayer::Encoder::no_vect;
 	spindle_encoder.func_vectors.Encoder_Vector_B = HardwareAbstractionLayer::Encoder::no_vect;
@@ -170,7 +170,8 @@ void HardwareAbstractionLayer::Encoder::get_rpm_quad()
 	BitClr_(extern_input__intervals, RPM_INTERVAL_BIT);
 	
 	//doing some scaling up and down trying to avoid float math as much as possible.
-	int32_t rps = ((spindle_encoder.period_ticks * TIMER_FRQ_HZ) * spindle_encoder.ticks_per_rev * 100 * 60) / 1000;
+	int32_t rps = (((float)spindle_encoder.period_ticks * RPM_PERIODS_IN_INTERVAL) /(float)spindle_encoder.ticks_per_rev) * 60.0;
+	
 	
 	spindle_encoder.sensed_rpm = rps;
 }
@@ -216,6 +217,7 @@ void HardwareAbstractionLayer::Encoder::read_chb()
 
 void HardwareAbstractionLayer::Encoder::read_chz()
 {
+	UDR0='X';
 
 	//So long as the timer remains enabled we can track rpm.
 	extern_encoder__ticks_at_time++;

@@ -12,7 +12,7 @@ struct s_encoder
 {
 	volatile uint32_t position;
 	volatile uint8_t active_channels;
-	volatile uint8_t direction;
+	volatile int8_t direction;
 	volatile uint16_t sensed_rpm;
 	volatile uint16_t period_ticks;
 	uint16_t ticks_per_rev;

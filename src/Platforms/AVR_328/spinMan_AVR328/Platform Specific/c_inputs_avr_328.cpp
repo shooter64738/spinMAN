@@ -152,12 +152,19 @@ ISR(TIMER2_COMPA_vect)
 		extern_input__intervals |=(1<<RPM_INTERVAL_BIT);
 	}
 
+	if (rpt_count_ticks >= RPT_GATE_TIME_MS)
+	{
+		rpt_count_ticks = 0;
+		
+		extern_input__intervals |=(1<<RPT_INTERVAL_BIT);//<--flag that its time to report
+		
+	}
+
 	if (tmr_count_ticks >= SET_GATE_TIME_MS)
 	{
 		tmr_count_ticks = 0;
 		
 		extern_input__intervals |=(1<<ONE_INTERVAL_BIT);//<--flag that 1 second has passed
-		extern_input__intervals |=(1<<RPT_INTERVAL_BIT);//<--flag that its time to report
 		
 		extern_input__time_count = IN_TCNT + local_overflow_accumulator;
 		IN_TCNT = 0;//<-- clear the counter for freq read (desired rpm)
@@ -167,4 +174,5 @@ ISR(TIMER2_COMPA_vect)
 	tmr_count_ticks++;
 	pid_count_ticks++;
 	rpm_count_ticks++;
+	rpt_count_ticks++;
 }

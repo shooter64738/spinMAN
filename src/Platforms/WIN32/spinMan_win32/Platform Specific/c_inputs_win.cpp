@@ -59,7 +59,7 @@ void HardwareAbstractionLayer::Inputs::get_set_point()
 void HardwareAbstractionLayer::Inputs::synch_hardware_inputs()
 {
 	uint8_t CONTROL_PORT_PIN_ADDRESS = 0;
-	//BitSet_(CONTROL_PORT_PIN_ADDRESS, ENABLE_PIN);
+	BitSet_(CONTROL_PORT_PIN_ADDRESS, ENABLE_PIN);
 	//BitSet_(CONTROL_PORT_PIN_ADDRESS, MODE_PIN_A);
 	//BitSet_(CONTROL_PORT_PIN_ADDRESS, MODE_PIN_B);
 
