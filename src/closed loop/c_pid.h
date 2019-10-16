@@ -35,6 +35,7 @@ namespace Spin
 			//functions
 			public:
 			static void Set_Factors(Spin::Configuration::s_pid_factors factors);
+			static void Load_Factors_For_Mode(Spin::Enums::e_drive_modes Mode);
 			static void Reset_integral();
 			static void Calculate(int32_t setPoint, int32_t processValue);
 			static void Reset();
@@ -44,7 +45,7 @@ namespace Spin
 			static void _clamp_output();
 			static void _set_p_term();
 			static void _set_i_term();
-			static void _set_d_term();
+			static void _set_d_term(int32_t current_process_value);
 		}; //c_pid
 	};
 };
