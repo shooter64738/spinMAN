@@ -75,6 +75,7 @@ namespace Spin
 			-1 value indicates there is no limit*/
 			int32_t Motor_Min_RPM;/*<------------------ Drive will not allow the motor to go below this rpm.
 			-1 value indicates there is no limit*/
+			int32_t Motor_RPM_Error;/*<---------------- If we dont hold exact rpm, whats the +/- tolerance?*/
 			uint16_t Home_Position;/*<----------------- The position the motor should always go to when stopped*/
 			uint8_t Tool_Orientation;/*<--------------- Position required for tool changing. Probably should be
 			controlled by the motion control though. Im leaving it in

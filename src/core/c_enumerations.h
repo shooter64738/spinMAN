@@ -21,6 +21,26 @@ namespace Spin
 			Encoder_Not_Available = 1,
 			Encoder_Available = 2,
 		};
+
+		enum class e_velocity_states
+		{
+			Invalid = 0,
+			Accelerate = 1,
+			Cruise = 2,
+			Decelerate = 3,
+			Stopping = 4
+			
+		};
+
+		enum class e_position_states
+		{
+			Invalid = 0,
+			Accel_To_Target = 1,
+			On_Target = 2,
+			Decel_To_Target = 3,
+			Target_Exceeded = 4
+
+		};
 		
 		enum class e_encoder_modes
 		{

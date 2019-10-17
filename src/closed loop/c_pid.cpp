@@ -9,21 +9,11 @@
 #include "c_pid.h"
 static Spin::Configuration::s_pid_factors factors;
 static Spin::Configuration::s_pid_factors terms;
-struct s_errors
-{
-	int32_t process;
-	int32_t previous;
-	int32_t accumulated;
-	int32_t max_process;
-	int32_t max_accumulated;
-	int8_t direction;
 
-};
 
-static s_errors errors;
+Spin::ClosedLoop::Pid::s_errors Spin::ClosedLoop::Pid::errors;
 static int32_t old_process_value = 0;
 int32_t Spin::ClosedLoop::Pid::output = 0;
-static int32_t last_output = 0;
 
 
 void Spin::ClosedLoop::Pid::Set_Factors(Spin::Configuration::s_pid_factors init_factors)
@@ -33,7 +23,7 @@ void Spin::ClosedLoop::Pid::Set_Factors(Spin::Configuration::s_pid_factors init_
 	factors.Ki = init_factors.Ki * PID_SCALING_FACTOR;
 	factors.Kd = init_factors.Kd * PID_SCALING_FACTOR;
 
-	errors.max_process = INT16_MAX / (factors.Kp + 1);
+	errors.max_process = INT16_MAX;// / (factors.Kp + 1);
 	errors.max_accumulated = MAX_I_TERM / (factors.Ki + 1);
 
 	Restart();
@@ -73,7 +63,7 @@ void Spin::ClosedLoop::Pid::Calculate(int32_t setPoint, int32_t processValue)
 	Spin::ClosedLoop::Pid::_set_d_term(processValue);//<--calculate d term from d factor and current error
 	
 	Spin::ClosedLoop::Pid::output = (((terms.Kp) + (terms.Ki) + (terms.Kd)) / PID_SCALING_FACTOR) ;
-	last_output = output *PID_SCALING_FACTOR;
+	
 	_clamp_output();//<--gold output between the PID_MAX and PID_MIN values.
 	old_process_value = processValue;
 }
@@ -86,8 +76,8 @@ void Spin::ClosedLoop::Pid::Reset()
 	factors.Kd = 0;
 	
 	//reset max values
-	errors.max_process;
-	errors.max_accumulated;
+	errors.max_process = 0;
+	errors.max_accumulated = 0;
 	
 	//reset terms, errors, outputs
 	Spin::ClosedLoop::Pid::Restart();
@@ -114,28 +104,6 @@ void Spin::ClosedLoop::Pid::Restart()
 
 void Spin::ClosedLoop::Pid::_clamp_output()
 {
-	/*
-	lag_correction is used to determine the 'jump' value for the pid output.
-	If 65535 is totally off, and the motor doesnt react until 64000, that is
-	a lag. In velocity mode its just a delay for the motor to start, but in 
-	position mode it will cause a lag in the reaction of the drive to get
-	to its intended target point. It will appear as an oscillation even if the
-	pid algorithm is tuned perfectly.
-	*/
-	
-	//Do we need to invert the output?
-	if (Spin::Configuration::Drive_Settings.Drive_Output_Inverted)
-	{
-		output = Spin::Configuration::Drive_Settings.Max_PWM_Output - Spin::ClosedLoop::Pid::output;
-		//adjust for lag
-		output -=(PID_MAX - Spin::Configuration::Drive_Settings.Drive_Min_On_Value);
-	}
-	else
-	{
-		//adjust for lag
-		output += Spin::Configuration::Drive_Settings.Drive_Min_On_Value;
-	}
-	
 	//Make sure the out value doesnt exceed hardware
 	if (output > PID_MAX)
 	{
@@ -150,19 +118,42 @@ void Spin::ClosedLoop::Pid::_clamp_output()
 		errors.accumulated -= (errors.process);
 	}
 	
+	/*
+	lag_correction is used to determine the 'jump' value for the pid output.
+	If 65535 is totally off, and the motor doesnt react until 64000, that is
+	a lag. In velocity mode its just a delay for the motor to start, but in
+	position mode it will cause a lag in the reaction of the drive to get
+	to its intended target point. It will appear as an oscillation even if the
+	pid algorithm is tuned perfectly.
+	*/
+
+	//Do we need to invert the output?
+	if (Spin::Configuration::Drive_Settings.Drive_Output_Inverted)
+	{
+		output = Spin::Configuration::Drive_Settings.Max_PWM_Output - Spin::ClosedLoop::Pid::output;
+		//adjust for lag
+		output -=(PID_MAX - Spin::Configuration::Drive_Settings.Drive_Min_On_Value);
+	}
+	else
+	{
+		//adjust for lag
+		output += Spin::Configuration::Drive_Settings.Drive_Min_On_Value;
+	}
+	
+	
+	
 }
 
 void Spin::ClosedLoop::Pid::_set_p_term()
 {
 	// Calculate Pterm and limit error overflow
-	/*if (errors.process > (errors.max_process)) {
+	if (errors.process > (errors.max_process)) {
 		terms.Kp = (INT16_MAX);
 	}
 	else if (errors.process < -(errors.max_process)) {
 		terms.Kp = -(INT16_MAX);
 	}
-	else*/
-	{
+	else{
 		terms.Kp = factors.Kp * errors.process;
 	}
 }

@@ -81,6 +81,7 @@ void Spin::Configuration::load_defaults()
 
 	Spin::Configuration::User_Settings.Motor_Max_RPM = -1; //default to no limit
 	Spin::Configuration::User_Settings.Motor_Min_RPM = -1; //default to no limit
+	Spin::Configuration::User_Settings.Motor_RPM_Error = 5; //default to no limit
 	Spin::Configuration::User_Settings.Home_Position = 0; //default to 0
 	Spin::Configuration::User_Settings.Tool_Orientation = 0; //default to 0
 	Spin::Configuration::User_Settings.Default_Direction = Enums::e_directions::Free;//set to free spin.

@@ -53,7 +53,7 @@ void Spin::Driver::Controller::initialize()
 	
 	//set the direction specified by the input pins
 	Spin::Output::set_direction(Spin::Input::Controls.direction);
-	Spin::ClosedLoop::Pid::Set_Factors(Configuration::PID_Tuning.Velocity);
+	//Spin::ClosedLoop::Pid::Set_Factors(Configuration::PID_Tuning.Velocity);
 
 }
 //63800 starts motor
@@ -181,7 +181,7 @@ void Spin::Driver::Controller::process()
 {
 
 
-	if (BitTst(extern_input__intervals, RPT_INTERVAL_BIT)) //<--one second interval for general purpose reporting
+	//if (BitTst(extern_input__intervals, RPT_INTERVAL_BIT)) //<--one second interval for general purpose reporting
 	{
 		BitClr_(extern_input__intervals, RPT_INTERVAL_BIT);
 
