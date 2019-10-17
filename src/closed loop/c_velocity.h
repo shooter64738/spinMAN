@@ -25,8 +25,12 @@ namespace Spin
 
 			//functions
 			public:
+			static void step(int32_t target, int32_t actual);
+			
 			protected:
 			private:
+			
+			
 		}; //c_pid
 	};
 };

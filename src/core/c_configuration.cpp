@@ -58,9 +58,9 @@ void Spin::Configuration::load_defaults()
 	Spin::Configuration::PID_Tuning.Position.Kd = 1;
 	Spin::Configuration::PID_Tuning.Position.Allowed_Error_Percent = 100;
 
-	Spin::Configuration::PID_Tuning.Velocity.Kp = 1;
-	Spin::Configuration::PID_Tuning.Velocity.Ki = 1;
-	Spin::Configuration::PID_Tuning.Velocity.Kd = 1;
+	Spin::Configuration::PID_Tuning.Velocity.Kp = 25;
+	Spin::Configuration::PID_Tuning.Velocity.Ki = 0;
+	Spin::Configuration::PID_Tuning.Velocity.Kd = 0;
 	Spin::Configuration::PID_Tuning.Velocity.Allowed_Error_Percent = 100;
 
 	Spin::Configuration::PID_Tuning.Torque.Kp = 0;
@@ -76,7 +76,7 @@ void Spin::Configuration::load_defaults()
 	= Drive_Settings.Drive_Output_Inverted ? Spin::Configuration::Drive_Settings.Max_PWM_Output : 0;
 
 	//Default to either 0 or highest pwm value, depending on inversion. This may change when user config is loaded
-	Spin::Configuration::Drive_Settings.Drive_Minimum_On_Value
+	Spin::Configuration::Drive_Settings.Drive_Min_On_Value
 	= Drive_Settings.Drive_Output_Inverted ? Spin::Configuration::Drive_Settings.Max_PWM_Output : 0;
 
 	Spin::Configuration::User_Settings.Motor_Max_RPM = -1; //default to no limit
@@ -85,12 +85,7 @@ void Spin::Configuration::load_defaults()
 	Spin::Configuration::User_Settings.Tool_Orientation = 0; //default to 0
 	Spin::Configuration::User_Settings.Default_Direction = Enums::e_directions::Free;//set to free spin.
 	
-	//Encoder has 100 pulses in a rotation.
-	Spin::Configuration::Drive_Settings.Encoder_Config.Encoder_Ticks_Per_Rev = 400;
-	//If quadrature mode is active the 100 pulses per rotation is multiplied by 4 (quadrature count)
-	Spin::Configuration::Drive_Settings.Encoder_Config.Encoder_Mode = Enums::e_encoder_modes::Quadrature;
-	spindle_encoder.func_vectors.Encoder_Vector_A = HardwareAbstractionLayer::Encoder::read_quad;
-	spindle_encoder.func_vectors.Encoder_Vector_B = HardwareAbstractionLayer::Encoder::read_quad;
+	
 	
 	//assume there has not been a config done.
 	Spin::Configuration::Status = Spin::Enums::e_config_results::Incomplete_Config;
@@ -99,6 +94,14 @@ void Spin::Configuration::load_defaults()
 
 Spin::Enums::e_config_results Spin::Configuration::load()
 {
+	Spin::Configuration::Drive_Settings.Drive_Min_On_Value = 64088;
+	//Encoder has 100 pulses in a rotation.
+	Spin::Configuration::Drive_Settings.Encoder_Config.Encoder_Ticks_Per_Rev = 400;
+	//If quadrature mode is active the 100 pulses per rotation is multiplied by 4 (quadrature count)
+	Spin::Configuration::Drive_Settings.Encoder_Config.Encoder_Mode = Enums::e_encoder_modes::Quadrature;
+	spindle_encoder.func_vectors.Encoder_Vector_A = HardwareAbstractionLayer::Encoder::read_quad;
+	spindle_encoder.func_vectors.Encoder_Vector_B = HardwareAbstractionLayer::Encoder::read_quad;
+	
 	return Enums::e_config_results::Incomplete_Config;
 }
 

@@ -15,6 +15,7 @@
 
 #define MAX_LONG INT32_MAX
 #define MAX_I_TERM (MAX_LONG / 2)
+#define MAX_P_TERM (INT32_MAX / 2)
 #define PID_SCALING_FACTOR 128
 #define PID_MIN 0
 #define PID_MAX 65535
@@ -39,6 +40,7 @@ namespace Spin
 			static void Reset_integral();
 			static void Calculate(int32_t setPoint, int32_t processValue);
 			static void Reset();
+			static void Restart();
 			protected:
 			
 			private:

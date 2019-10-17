@@ -63,9 +63,10 @@ namespace Spin
 			max pwm = 100% on*/
 			uint32_t Max_PWM_Output;/*<---------------- Highest value the PID can output*/
 			uint32_t Drive_Turn_Off_Value;/*<---------- Either 0 or max pwm, depending on inversion*/
-			uint32_t Drive_Minimum_On_Value;/*<-------- 0 may be off, but 1, may not cause the drive to move. output
+			uint32_t Drive_Min_On_Value;/*<-------- 0 may be off, but 1, may not cause the drive to move. output
 			may have to raise to 8,10,13 or higher to actually cause the
 			motor to rotate*/
+			
 			s_encoder Encoder_Config;
 		};
 		struct s_user_settings
