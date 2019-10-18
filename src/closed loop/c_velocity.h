@@ -20,6 +20,7 @@ namespace Spin
 		{
 			//variables
 			public:
+				static uint16_t Acceleration_Per_Cycle;
 			protected:
 			private:
 
@@ -31,6 +32,8 @@ namespace Spin
 			private:
 				static bool _check_range(int32_t target_rpm);
 				static bool _check_tolerance(int32_t target_rpm);
+				static void _set_state(int32_t target, int32_t actual);
+				static int32_t _clamp_acceleration(int32_t target, int32_t actual);
 			
 		}; //c_pid
 	};

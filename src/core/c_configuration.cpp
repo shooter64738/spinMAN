@@ -13,6 +13,7 @@
 #include "../driver/c_controller.h"
 #include "../driver/volatile_encoder_externs.h"
 #include "../driver/volatile_input_externs.h"
+#include "../closed loop/c_velocity.h"
 
 
 
@@ -81,7 +82,8 @@ void Spin::Configuration::load_defaults()
 
 	Spin::Configuration::User_Settings.Motor_Max_RPM = -1; //default to no limit
 	Spin::Configuration::User_Settings.Motor_Min_RPM = -1; //default to no limit
-	Spin::Configuration::User_Settings.Motor_RPM_Error = 5; //default to no limit
+	Spin::Configuration::User_Settings.Motor_RPM_Error = 5; //default to +/-5rpm
+	Spin::Configuration::User_Settings.Motor_Accel_Rate_Per_Second = 500;//default to 500rpm persecond
 	Spin::Configuration::User_Settings.Home_Position = 0; //default to 0
 	Spin::Configuration::User_Settings.Tool_Orientation = 0; //default to 0
 	Spin::Configuration::User_Settings.Default_Direction = Enums::e_directions::Free;//set to free spin.
@@ -102,6 +104,7 @@ Spin::Enums::e_config_results Spin::Configuration::load()
 	Spin::Configuration::Drive_Settings.Encoder_Config.Encoder_Mode = Enums::e_encoder_modes::Quadrature;
 	spindle_encoder.func_vectors.Encoder_Vector_A = HardwareAbstractionLayer::Encoder::read_quad;
 	spindle_encoder.func_vectors.Encoder_Vector_B = HardwareAbstractionLayer::Encoder::read_quad;
+	Spin::ClosedLoop::Velocity::Acceleration_Per_Cycle = Spin::Configuration::User_Settings.Motor_Accel_Rate_Per_Second * (1 / PID_PERIODS_IN_INTERVAL);
 	
 	return Enums::e_config_results::Incomplete_Config;
 }

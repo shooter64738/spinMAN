@@ -67,6 +67,7 @@ namespace Spin
 			may have to raise to 8,10,13 or higher to actually cause the
 			motor to rotate*/
 			
+			
 			s_encoder Encoder_Config;
 		};
 		struct s_user_settings
@@ -80,6 +81,7 @@ namespace Spin
 			uint8_t Tool_Orientation;/*<--------------- Position required for tool changing. Probably should be
 			controlled by the motion control though. Im leaving it in
 			for now.*/
+			uint16_t Motor_Accel_Rate_Per_Second;/*<--- What is the maximum rate the motor should accelerate*/
 			Enums::e_directions Default_Direction;/*<-- May remove this. Should always follow the inputs*/
 
 		};

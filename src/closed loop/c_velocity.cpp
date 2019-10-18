@@ -12,6 +12,7 @@
 static int32_t pwm_out = 0;
 static Spin::Enums::e_velocity_states State;
 static uint16_t some_rmp_range = 5;
+uint16_t Spin::ClosedLoop::Velocity::Acceleration_Per_Cycle = 0;
 
 void Spin::ClosedLoop::Velocity::step(int32_t target, int32_t actual)
 {
@@ -19,11 +20,8 @@ void Spin::ClosedLoop::Velocity::step(int32_t target, int32_t actual)
 	if (!_check_range(target))
 	return;
 
-	//We need to limit the error or the output will spike.
-	if (abs(target-actual)>500)
-	{
-		target = actual + 500;
-	}
+	_set_state(target, actual);
+	target = _clamp_acceleration(target, actual);
 
 	//First order of business is to get the pid value
 	Spin::ClosedLoop::Pid::Calculate(target, actual);
@@ -32,13 +30,13 @@ void Spin::ClosedLoop::Velocity::step(int32_t target, int32_t actual)
 	if (!_check_tolerance(abs(Spin::ClosedLoop::Pid::errors.process)))
 	return;
 
-	//Set the state of the velocity control
-	if (Spin::ClosedLoop::Pid::errors.direction > 0)
-	State = Spin::Enums::e_velocity_states::Accelerate;
-	else if (Spin::ClosedLoop::Pid::errors.direction < 0)
-	State = Spin::Enums::e_velocity_states::Decelerate;
-	else if (Spin::ClosedLoop::Pid::errors.direction == 0)
-	State = Spin::Enums::e_velocity_states::Cruise;
+	////Set the state of the velocity control
+	//if (Spin::ClosedLoop::Pid::errors.direction > 0)
+	//State = Spin::Enums::e_velocity_states::Accelerate;
+	//else if (Spin::ClosedLoop::Pid::errors.direction < 0)
+	//State = Spin::Enums::e_velocity_states::Decelerate;
+	//else if (Spin::ClosedLoop::Pid::errors.direction == 0)
+	//State = Spin::Enums::e_velocity_states::Cruise;
 
 	//If we made it here we are going to use the PIDs calcualted output value.
 	pwm_out = Spin::ClosedLoop::Pid::output;
@@ -70,4 +68,55 @@ bool Spin::ClosedLoop::Velocity::_check_tolerance(int32_t target_rpm)
 	
 
 	return true;//<-- value is out of tolerance
+}
+
+void Spin::ClosedLoop::Velocity::_set_state(int32_t target, int32_t actual)
+{
+	//Set states
+	if ((target - Spin::Configuration::User_Settings.Motor_RPM_Error) > actual)
+	{
+		State = Spin::Enums::e_velocity_states::Accelerate;
+	}
+	else if ((target + Spin::Configuration::User_Settings.Motor_RPM_Error) < actual)
+	{
+		State = Spin::Enums::e_velocity_states::Decelerate;
+	}
+	else
+	{
+		//we are at speed, do nothing
+		State = Spin::Enums::e_velocity_states::Cruise;
+	}
+}
+
+int32_t Spin::ClosedLoop::Velocity::_clamp_acceleration(int32_t target, int32_t actual)
+{
+	//Set states
+	if (State == Spin::Enums::e_velocity_states::Accelerate)
+	{
+		if ((target - actual)>Acceleration_Per_Cycle)
+		{
+			//clamp accel output
+			target = actual + Acceleration_Per_Cycle;
+		}
+		else
+		{
+			//handing this over to pid entirely now
+			State = Spin::Enums::e_velocity_states::Cruise;
+		}
+	}
+	else if ((target - Spin::Configuration::User_Settings.Motor_RPM_Error) < actual)
+	{
+		State = Spin::Enums::e_velocity_states::Decelerate;
+		if ((actual - target)>Acceleration_Per_Cycle)
+		{
+			//clamp decel output
+			target = actual - Acceleration_Per_Cycle;
+		}
+		else
+		{
+			//handing this over to pid entirely now
+			State = Spin::Enums::e_velocity_states::Cruise;
+		}
+	}
+	return target;
 }
