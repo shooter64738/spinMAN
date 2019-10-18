@@ -133,14 +133,14 @@ void Spin::ClosedLoop::Pid::_clamp_output()
 		output = Spin::Configuration::Drive_Settings.Max_PWM_Output - Spin::ClosedLoop::Pid::output;
 		//adjust for lag
 		output -=(PID_MAX - Spin::Configuration::Drive_Settings.Drive_Min_On_Value);
+		if (output < PID_MIN) output = PID_MIN;
 	}
 	else
 	{
 		//adjust for lag
 		output += Spin::Configuration::Drive_Settings.Drive_Min_On_Value;
+		if (output > PID_MAX) output = PID_MAX;
 	}
-	
-	
 	
 }
 
