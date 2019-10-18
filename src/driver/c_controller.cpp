@@ -38,23 +38,41 @@ void Spin::Driver::Controller::initialize()
 	Spin::Driver::Controller::host_serial.print_string("proto type\r\n");//<-- Send hello message
 
 
+	HardwareAbstractionLayer::Core::start_interrupts();//<--Start HW interrupts
+	Spin::Configuration::initiailize();//<--init and set default config
+	Spin::Configuration::load();//<--load user settings
+	HardwareAbstractionLayer::Encoder::initialize();//<--init encoder after configuration loads.
+	Spin::Input::initialize();//<--init the hardware inputs
+	Spin::Output::initialize();//<--init hardware optputs
+	
+	
+	/*
+	Some motor drivers can act in an unpredictable way if certain things are not done. For example
+	the power solutions driver will sometimes turn on the motor for no real reason if both direction
+	lines are set to low, and the high voltage to the driver is turned on.
+	In order to prevent things like that from happening I am adding an __armed__
+	variable to the inputs. Until the __armed__ flag is set to a 1, this controller will not do
+	anything. The last thing I want is for my driver board to power cycle and the spindle of my cnc
+	mill come to life while I dont expect it to!
+	To solve this condition with the power solutions driver, the 5v logic power line from the motor
+	driver board should be connected to the arming input on the control. That way the driver will
+	not get any commands from the controller until after it is powered up.
+	*/
 
-	//enable interrupts
-	HardwareAbstractionLayer::Core::start_interrupts();
 	
-	Spin::Configuration::initiailize();
-	Spin::Configuration::load();
-	
-	Spin::Input::initialize();
-	
-	Spin::Output::initialize();
-	
-	Spin::Driver::Controller::sync_out_in_control();
-	
-	//set the direction specified by the input pins
-	Spin::Output::set_direction(Spin::Input::Controls.direction);
-	//Spin::ClosedLoop::Pid::Set_Factors(Configuration::PID_Tuning.Velocity);
+	HardwareAbstractionLayer::Outputs::set_direction(Spin::Enums::e_directions::Free);//<--set both direction pins high
+	//Just set and wait until __armed__ is set to high. Even if hell freezes over, we are going to wait
+	//while (!Spin::Input::Controls.__armed__)
+	//{
+	//	//check the input states over and over.
+	//	HardwareAbstractionLayer::Inputs::synch_hardware_inputs();
+	//	//when armed is set to true, we can break the loop and run as normal.
+	//}
 
+	Spin::Driver::Controller::sync_out_in_control();//<--synch controller states with input values
+	Spin::Output::set_direction(Spin::Input::Controls.direction);//<--set direction input says to run.
+	
+	Spin::Configuration::save();
 }
 //63800 starts motor
 void Spin::Driver::Controller::run()
@@ -67,17 +85,8 @@ void Spin::Driver::Controller::run()
 		HardwareAbstractionLayer::Inputs::synch_hardware_inputs();//<--read input states from hardware
 		Spin::Driver::Controller::sync_out_in_control();//<--synch input/output control states
 		HardwareAbstractionLayer::Encoder::get_rpm();//<--check rpm, recalculate if its time
-		//HardwareAbstractionLayer::Inputs::get_set_point();//<--get set point if its time
-		//Spin::Input::Controls.sensed_position = extern_encoder__count;
-		//Spin::Input::Controls.step_counter = extern_input__time_count;
 		Spin::Driver::Controller::check_pid_cycle();//<--check if pid time has expired, and update if needed
-
-		//if (Spin::Output::Controls.enable == Enums::e_drive_states::Enabled)
-		{
-			//HardwareAbstractionLayer::Outputs::update_output(62500);
-
-			Spin::Driver::Controller::process();//<--General processing. Perhaps an LCD update
-		}
+		Spin::Driver::Controller::process();//<--General processing. Perhaps an LCD update
 	}
 }
 
@@ -97,7 +106,6 @@ void Spin::Driver::Controller::sync_out_in_control()
 			
 			//Spin::Input::Controls.direction = Enums::e_directions::Free;
 		}
-		Spin::Driver::Controller::host_serial.print_string("RESTARTING!!!\r\n");
 		Spin::ClosedLoop::Pid::Restart();
 	}
 	
@@ -168,13 +176,6 @@ void Spin::Driver::Controller::check_pid_cycle()
 			break;
 		}
 	}
-	else
-	{
-		#ifdef DEBUG_AVR
-		Spin::Driver::Controller::host_serial.print_string(" pid not active\r\n");
-		#endif
-	}
-
 }
 
 void Spin::Driver::Controller::process()
@@ -234,29 +235,21 @@ void Spin::Driver::Controller::process()
 			if (byte == 'P')
 			{
 				Spin::Configuration::PID_Tuning.Velocity.Kp = p_var;
-				Spin::Driver::Controller::host_serial.print_string(" pid P:");
-				Spin::Driver::Controller::host_serial.print_int32(p_var);
 				Spin::ClosedLoop::Pid::Load_Factors_For_Mode(Spin::Input::Controls.in_mode);
 			}
 			else if (byte == 'I')
 			{
 				Spin::Configuration::PID_Tuning.Velocity.Ki = p_var;
-				Spin::Driver::Controller::host_serial.print_string(" pid I:");
-				Spin::Driver::Controller::host_serial.print_int32(p_var);
 				Spin::ClosedLoop::Pid::Load_Factors_For_Mode(Spin::Input::Controls.in_mode);
 			}
 			else if (byte == 'D')
 			{
 				Spin::Configuration::PID_Tuning.Velocity.Kd = p_var;
-				Spin::Driver::Controller::host_serial.print_string(" pid D:");
-				Spin::Driver::Controller::host_serial.print_int32(p_var);
 				Spin::ClosedLoop::Pid::Load_Factors_For_Mode(Spin::Input::Controls.in_mode);
 			}
 			else
 			{
 				user_pos = p_var;
-				Spin::Driver::Controller::host_serial.print_string(" usr:");
-				Spin::Driver::Controller::host_serial.print_int32(user_pos);
 			}
 			Spin::Driver::Controller::host_serial.SkipToEOL();
 

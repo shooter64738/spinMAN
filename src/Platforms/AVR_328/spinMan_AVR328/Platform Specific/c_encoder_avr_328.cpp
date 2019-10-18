@@ -15,14 +15,15 @@ void HardwareAbstractionLayer::Encoder::initialize()
 {
 	spindle_encoder.position = 0;
 	spindle_encoder.active_channels = 0;
-	spindle_encoder.ticks_per_rev = 400;
+	//spindle_encoder.ticks_per_rev = 400;
 	/*
-	These are default configs on start up. They may change entirly after
+	These are default configs on start up. They may change entirely after
 	a configuration is loaded in the c_configuration class.
 	*/
 	//setup isr's on int0, int1 for quadrature encoder with no index
 	HardwareAbstractionLayer::Encoder::configure_encoder_quadrature();
 
+	/*
 	//assign a function pointer to be called when a isr runs.
 	spindle_encoder.func_vectors.Encoder_Vector_A = HardwareAbstractionLayer::Encoder::read_quad;
 	//assign a function pointer to be called when b isr runs.
@@ -31,6 +32,7 @@ void HardwareAbstractionLayer::Encoder::initialize()
 	spindle_encoder.func_vectors.Encoder_Vector_Z = HardwareAbstractionLayer::Encoder::no_vect;
 	//assign a function pointer to compute rpm based on encoder type.
 	spindle_encoder.func_vectors.Rpm_Compute = HardwareAbstractionLayer::Encoder::get_rpm_quad;
+	*/
 	
 }
 

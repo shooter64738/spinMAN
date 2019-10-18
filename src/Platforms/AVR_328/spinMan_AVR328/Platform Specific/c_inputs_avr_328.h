@@ -19,6 +19,7 @@
 #define MODE_PIN_A PINC1    //Nano pin A1
 #define MODE_PIN_B PINC2    //Nano pin A2
 #define ENABLE_PIN PINC3    //Nano pin A3
+#define ARM_PIN PINC4       //Nano pin A4
 
 namespace HardwareAbstractionLayer
 {

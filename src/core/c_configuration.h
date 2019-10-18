@@ -29,7 +29,6 @@ namespace Spin
 			int32_t Kp;
 			int32_t Ki;
 			int32_t Kd;
-			int16_t Allowed_Error_Percent;
 		};
 		struct s_pid_tunings
 		{
@@ -90,7 +89,7 @@ namespace Spin
 		static s_drive_settings Drive_Settings;
 		static s_user_settings User_Settings;
 		static Spin::Enums::e_config_results Status;
-
+		
 		protected:
 		private:
 
@@ -100,6 +99,7 @@ namespace Spin
 		static void load_defaults();
 		static Spin::Enums::e_config_results load();
 		static void save();
+		
 		static void auto_config(char * mdoe);
 		static Spin::Enums::e_config_results _config_encoder();
 		static void write_message(char * message);
@@ -108,6 +108,7 @@ namespace Spin
 		static uint32_t input_uint32(char * message);
 		protected:
 		private:
+		static void _assign_encoder_vectors(Enums::e_encoder_modes encoder_type);
 
 	}; //c_configuration
 };

@@ -100,6 +100,11 @@ void HardwareAbstractionLayer::Inputs::synch_hardware_inputs(uint8_t current)
 	else
 	Spin::Input::Controls.enable = Spin::Enums::e_drive_states::Disabled;
 
+	if (BitTst(current, ARM_PIN))
+	Spin::Input::Controls.__armed__ = 1;
+	else
+	Spin::Input::Controls.__armed__ = 0;
+
 	if (BitTst(current, DIRECTION_PIN))
 	Spin::Input::Controls.direction = Spin::Enums::e_directions::Forward;
 	else

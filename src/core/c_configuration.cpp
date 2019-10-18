@@ -14,6 +14,8 @@
 #include "../driver/volatile_encoder_externs.h"
 #include "../driver/volatile_input_externs.h"
 #include "../closed loop/c_velocity.h"
+#include <math.h>
+
 
 
 
@@ -47,7 +49,7 @@ void Spin::Configuration::initiailize()
 			break;
 		}
 	}
-	HardwareAbstractionLayer::Encoder::initialize();
+	
 	Spin::Configuration::load_defaults();
 }
 
@@ -57,17 +59,14 @@ void Spin::Configuration::load_defaults()
 	Spin::Configuration::PID_Tuning.Position.Kp = 1;
 	Spin::Configuration::PID_Tuning.Position.Ki = 1;
 	Spin::Configuration::PID_Tuning.Position.Kd = 1;
-	Spin::Configuration::PID_Tuning.Position.Allowed_Error_Percent = 100;
 
 	Spin::Configuration::PID_Tuning.Velocity.Kp = 4;
 	Spin::Configuration::PID_Tuning.Velocity.Ki = 5;
 	Spin::Configuration::PID_Tuning.Velocity.Kd = 1;
-	Spin::Configuration::PID_Tuning.Velocity.Allowed_Error_Percent = 100;
 
 	Spin::Configuration::PID_Tuning.Torque.Kp = 0;
 	Spin::Configuration::PID_Tuning.Torque.Ki = 0;
 	Spin::Configuration::PID_Tuning.Torque.Kd = 0;
-	Spin::Configuration::PID_Tuning.Torque.Allowed_Error_Percent = 50;
 
 	Spin::Configuration::Drive_Settings.Drive_Output_Inverted = 1;
 	Spin::Configuration::Drive_Settings.Hard_Stop_On_Disable = 1;
@@ -83,11 +82,16 @@ void Spin::Configuration::load_defaults()
 	Spin::Configuration::User_Settings.Motor_Max_RPM = -1; //default to no limit
 	Spin::Configuration::User_Settings.Motor_Min_RPM = -1; //default to no limit
 	Spin::Configuration::User_Settings.Motor_RPM_Error = 5; //default to +/-5rpm
-	Spin::Configuration::User_Settings.Motor_Accel_Rate_Per_Second = 500;//default to 500rpm persecond
+	Spin::Configuration::User_Settings.Motor_Accel_Rate_Per_Second = 150;//default to 150rpm/sec/sec
 	Spin::Configuration::User_Settings.Home_Position = 0; //default to 0
 	Spin::Configuration::User_Settings.Tool_Orientation = 0; //default to 0
 	Spin::Configuration::User_Settings.Default_Direction = Enums::e_directions::Free;//set to free spin.
 	
+	Spin::Configuration::Drive_Settings.Drive_Min_On_Value = 64088;
+	//Encoder has 100 pulses in a rotation.
+	//If quadrature mode is active the 100 pulses per rotation is multiplied by 4 (quadrature count)
+	Spin::Configuration::Drive_Settings.Encoder_Config.Encoder_Ticks_Per_Rev = 100;
+	Spin::Configuration::Drive_Settings.Encoder_Config.Encoder_Mode = Enums::e_encoder_modes::Quadrature;
 	
 	
 	//assume there has not been a config done.
@@ -97,20 +101,62 @@ void Spin::Configuration::load_defaults()
 
 Spin::Enums::e_config_results Spin::Configuration::load()
 {
-	Spin::Configuration::Drive_Settings.Drive_Min_On_Value = 64088;
-	//Encoder has 100 pulses in a rotation.
-	Spin::Configuration::Drive_Settings.Encoder_Config.Encoder_Ticks_Per_Rev = 400;
-	//If quadrature mode is active the 100 pulses per rotation is multiplied by 4 (quadrature count)
-	Spin::Configuration::Drive_Settings.Encoder_Config.Encoder_Mode = Enums::e_encoder_modes::Quadrature;
-	spindle_encoder.func_vectors.Encoder_Vector_A = HardwareAbstractionLayer::Encoder::read_quad;
-	spindle_encoder.func_vectors.Encoder_Vector_B = HardwareAbstractionLayer::Encoder::read_quad;
-	Spin::ClosedLoop::Velocity::Acceleration_Per_Cycle = Spin::Configuration::User_Settings.Motor_Accel_Rate_Per_Second * (1 / PID_PERIODS_IN_INTERVAL);
+	
+	Spin::Configuration::_assign_encoder_vectors(Spin::Configuration::Drive_Settings.Encoder_Config.Encoder_Mode);
+	
+	Spin::ClosedLoop::Velocity::Acceleration_Per_Cycle = pow((Spin::Configuration::User_Settings.Motor_Accel_Rate_Per_Second * (1 / PID_PERIODS_IN_INTERVAL)),2);
 	
 	return Enums::e_config_results::Incomplete_Config;
 }
 
 void Spin::Configuration::save()
 {
+	uint16_t size = sizeof(s_pid_tunings);
+	//Convert pid settings to char*
+	char * stream;
+	char _stream_PID_Tuning[(sizeof(s_pid_tunings))];
+	memcpy(&_stream_PID_Tuning, &PID_Tuning, sizeof(s_pid_tunings));
+	HardwareAbstractionLayer::Storage::save(_stream_PID_Tuning,size);
+
+	size = sizeof(s_drive_settings);
+	//Convert drive settings to char*
+	char _stream_Drive_Settings[(sizeof(s_drive_settings))];
+	memcpy(&_stream_Drive_Settings, &Drive_Settings, sizeof(s_drive_settings));
+	HardwareAbstractionLayer::Storage::save(_stream_Drive_Settings,size);
+
+	size = sizeof(s_user_settings);
+	//Convert drive settings to char*
+	char _stream_User_Settings[(sizeof(s_user_settings))];
+	memcpy(&_stream_User_Settings, &User_Settings, sizeof(s_user_settings));
+	HardwareAbstractionLayer::Storage::save(_stream_User_Settings,size);
+
+
+}
+
+void Spin::Configuration::_assign_encoder_vectors(Enums::e_encoder_modes encoder_type)
+{
+	switch (encoder_type)
+	{
+		case Spin::Enums::e_encoder_modes::Quadrature:
+		{
+			//assign function pointers to what needs to be called for thisencoder type.
+			spindle_encoder.func_vectors.Encoder_Vector_A = HardwareAbstractionLayer::Encoder::read_quad;
+			spindle_encoder.func_vectors.Encoder_Vector_B = HardwareAbstractionLayer::Encoder::read_quad;
+			spindle_encoder.func_vectors.Encoder_Vector_Z = HardwareAbstractionLayer::Encoder::no_vect;
+
+			//assign the appropriate function to calcualte rpm for quadrature WITHOUT index
+			spindle_encoder.func_vectors.Rpm_Compute = HardwareAbstractionLayer::Encoder::get_rpm_quad;
+			
+			//configure the hardware to read a quadrature WITHOUT an index pulse.
+			HardwareAbstractionLayer::Encoder::configure_encoder_quadrature();
+			
+			//Since it is quadrature multiply ppr times 4 to get cpr.
+			Spin::Configuration::Drive_Settings.Encoder_Config.Encoder_Ticks_Per_Rev *= 4;
+			break;
+		}
+		default:
+		break;
+	}
 }
 
 void Spin::Configuration::auto_config(char * config_type)
@@ -287,6 +333,7 @@ void Spin::Configuration::write_message(char * message)
 	Spin::Driver::Controller::host_serial.SkipToEOL();
 	Spin::Driver::Controller::host_serial.Reset();
 }
+
 char* Spin::Configuration::input_char()
 {
 	return NULL;
@@ -324,6 +371,7 @@ int32_t Spin::Configuration::input_int32(char * message)
 		}
 	}
 }
+
 uint32_t Spin::Configuration::input_uint32(char * message)
 {
 	return 0;

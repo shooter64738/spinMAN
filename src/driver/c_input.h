@@ -52,9 +52,7 @@ namespace Spin
 			Spin::Enums::e_drive_modes in_mode;
 			Spin::Enums::e_drive_states enable;
 			Spin::Enums::e_directions direction;
-			//uint32_t index;
-			//int32_t sensed_position; //<--Removed. Use extern_encoder__count instead
-			
+			uint8_t __armed__; //This flag MUST be set to 1 or NOTHING will happen. 
 		};
 		
 		//variables

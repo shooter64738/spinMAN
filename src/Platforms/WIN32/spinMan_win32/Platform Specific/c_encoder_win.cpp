@@ -14,13 +14,13 @@ void HardwareAbstractionLayer::Encoder::initialize()
 {
 	spindle_encoder.position = 0;
 	spindle_encoder.active_channels = 0;
-	spindle_encoder.ticks_per_rev = 400;
-	spindle_encoder.func_vectors.Encoder_Vector_A = HardwareAbstractionLayer::Encoder::read_quad; // HardwareAbstractionLayer::Encoder::no_vect;
-	spindle_encoder.func_vectors.Encoder_Vector_B = HardwareAbstractionLayer::Encoder::read_quad; //HardwareAbstractionLayer::Encoder::no_vect;
-	spindle_encoder.func_vectors.Encoder_Vector_Z = HardwareAbstractionLayer::Encoder::no_vect;
-	spindle_encoder.func_vectors.Rpm_Compute = HardwareAbstractionLayer::Encoder::get_rpm_quad;
-	HardwareAbstractionLayer::Encoder::config_cha();
-	HardwareAbstractionLayer::Encoder::config_chb();
+	//spindle_encoder.ticks_per_rev = 400;
+	//spindle_encoder.func_vectors.Encoder_Vector_A = HardwareAbstractionLayer::Encoder::read_quad; // HardwareAbstractionLayer::Encoder::no_vect;
+	//spindle_encoder.func_vectors.Encoder_Vector_B = HardwareAbstractionLayer::Encoder::read_quad; //HardwareAbstractionLayer::Encoder::no_vect;
+	//spindle_encoder.func_vectors.Encoder_Vector_Z = HardwareAbstractionLayer::Encoder::no_vect;
+	//spindle_encoder.func_vectors.Rpm_Compute = HardwareAbstractionLayer::Encoder::get_rpm_quad;
+	//HardwareAbstractionLayer::Encoder::config_cha();
+	//HardwareAbstractionLayer::Encoder::config_chb();
 }
 
 void HardwareAbstractionLayer::Encoder::get_rpm()
