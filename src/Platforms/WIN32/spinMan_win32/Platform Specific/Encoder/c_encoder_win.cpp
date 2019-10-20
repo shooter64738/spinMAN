@@ -1,12 +1,13 @@
 #include "c_encoder_win.h"
-#include "c_inputs_win.h"
-#include "../../../../driver/c_input.h"
-#include "../../../../bit_manipulation.h"
-#include "../../../../driver/volatile_input_externs.h"
+#include "../c_inputs_win.h"
+#include "../../../../../driver/c_input.h"
+#include "../../../../../bit_manipulation.h"
+#include "../../../../../driver/volatile_input_externs.h"
 #define __ENCODER_VOLATILES__
-#include "../../../../driver/volatile_encoder_externs.h"
+#include "../../../../../driver/volatile_encoder_externs.h"
 
 static const int8_t encoder_table[] = { 0, -1, 1, 0, 1, 0, 0, -1, -1, 0, 0, 1, 0, 1, -1, 0 };
+
 
 void HardwareAbstractionLayer::Encoder::no_vect(){};
 
@@ -23,52 +24,25 @@ void HardwareAbstractionLayer::Encoder::initialize()
 	//HardwareAbstractionLayer::Encoder::config_chb();
 }
 
-void HardwareAbstractionLayer::Encoder::get_rpm()
+void HardwareAbstractionLayer::Encoder::test_channels()
 {
-	if (!BitTst(extern_input__intervals, RPM_INTERVAL_BIT))
-		return;//<--return if its not time
-}
+	//This method should only get called during auto configuration.
+	//It will read port 'D' to determine which channels of the encoder
+	//are active and then the auto config can decide which vectors to
+	//point to.
+	uint8_t capture_port = 0;
 
-void HardwareAbstractionLayer::Encoder::get_rpm_quad()
-{
-}
+	//Check pin 0. (int0)
+	if (BitTst(capture_port, 0)) //<--encoder channel a
+		spindle_encoder.active_channels |= ENC_CHA_TRK_BIT;
 
-void HardwareAbstractionLayer::Encoder::config_chz()
-{
-}
+	//Check pin 1. (int1)
+	if (BitTst(capture_port, 1)) //<--encoder channel b
+		spindle_encoder.active_channels |= ENC_CHB_TRK_BIT;
 
-void HardwareAbstractionLayer::Encoder::config_cha()
-{
-	
-}
-
-void HardwareAbstractionLayer::Encoder::config_chb()
-{
-}
-
-void HardwareAbstractionLayer::Encoder::configure_encoder_quadrature()
-{
-}
-
-void HardwareAbstractionLayer::Encoder::read_cha()
-{
-}
-
-void HardwareAbstractionLayer::Encoder::read_chb()
-{
-}
-
-void HardwareAbstractionLayer::Encoder::read_chz()
-{
-}
-
-void HardwareAbstractionLayer::Encoder::read_quad()
-{
-}
-uint8_t HardwareAbstractionLayer::Encoder::get_active_channels()
-{
-	uint8_t _return = spindle_encoder.active_channels;
-	return _return;
+	//Check pin 4. (pcint4)
+	if (BitTst(capture_port, 2)) //<--encoder channel z
+		spindle_encoder.active_channels |= ENC_CHZ_TRK_BIT;
 }
 
 //ISR(INT0_vect)

@@ -12,6 +12,7 @@
 #include <stdint.h>
 
 #include "c_enumerations.h"
+#include "../hardware_def.h"
 #define INPUT_NUM_SIZE 10
 
 /*
@@ -39,7 +40,7 @@ namespace Spin
 		};
 		struct s_encoder
 		{
-			uint16_t Encoder_Ticks_Per_Rev;/*<------- How many pulses the encoder will produce in one rotation.
+			uint16_t Encoder_PPR_Value;/*<----------- How many pulses the encoder will produce in one rotation.
 			This is NOT the CPR value for a quadrature encoder. If
 			ticks per rev is 100 then the CPRR value will be 400 in
 			quadrature mode.*/
@@ -90,6 +91,14 @@ namespace Spin
 		static s_user_settings User_Settings;
 		static Spin::Enums::e_config_results Status;
 		
+		struct s_work_data 
+		{
+			//Remove this at a later date. we are using a volatile now. 
+			uint16_t Encoder_Ticks_Per_Rev;/*<------- How many pulses the encoder will produce in one rotation.
+			depending on encoder mode tis will be changed when a configuration is laoded*/
+		};
+		static s_work_data Working_Data;
+		
 		protected:
 		private:
 
@@ -100,6 +109,7 @@ namespace Spin
 		static Spin::Enums::e_config_results load();
 		static void save();
 		
+		static void set_working_data();
 		static void auto_config(char * mdoe);
 		static Spin::Enums::e_config_results _config_encoder();
 		static void write_message(char * message);

@@ -7,7 +7,6 @@
 
 
 #include "c_configuration.h"
-#include "../hardware_def.h"
 #include "../bit_manipulation.h"
 #include "../driver/c_input.h"
 #include "../driver/c_controller.h"
@@ -19,9 +18,11 @@
 
 
 
+
 Spin::Configuration::s_pid_tunings Spin::Configuration::PID_Tuning;
 Spin::Configuration::s_drive_settings Spin::Configuration::Drive_Settings;
 Spin::Configuration::s_user_settings Spin::Configuration::User_Settings;
+Spin::Configuration::s_work_data Spin::Configuration::Working_Data;
 Spin::Enums::e_config_results Spin::Configuration::Status;
 
 void Spin::Configuration::initiailize()
@@ -49,12 +50,13 @@ void Spin::Configuration::initiailize()
 			break;
 		}
 	}
-	
-	Spin::Configuration::load_defaults();
 }
 
 void Spin::Configuration::load_defaults()
 {
+	//If defaults need to be re-loaded due to bad config saved, we need to re-init
+	Spin::Configuration::initiailize();
+
 	//Some default pid values
 	Spin::Configuration::PID_Tuning.Position.Kp = 1;
 	Spin::Configuration::PID_Tuning.Position.Ki = 1;
@@ -90,72 +92,142 @@ void Spin::Configuration::load_defaults()
 	Spin::Configuration::Drive_Settings.Drive_Min_On_Value = 64088;
 	//Encoder has 100 pulses in a rotation.
 	//If quadrature mode is active the 100 pulses per rotation is multiplied by 4 (quadrature count)
-	Spin::Configuration::Drive_Settings.Encoder_Config.Encoder_Ticks_Per_Rev = 100;
+	Spin::Configuration::Drive_Settings.Encoder_Config.Encoder_PPR_Value = 100;
 	Spin::Configuration::Drive_Settings.Encoder_Config.Encoder_Mode = Enums::e_encoder_modes::Quadrature;
 	
 	
 	//assume there has not been a config done.
 	Spin::Configuration::Status = Spin::Enums::e_config_results::Incomplete_Config;
+
+	Spin::Configuration::set_working_data();
 	
 }
 
 Spin::Enums::e_config_results Spin::Configuration::load()
 {
+	//Convert pid settings to char*
+	char _stream[(sizeof(s_pid_tunings)+sizeof(s_drive_settings)+sizeof(s_user_settings))];
+	HardwareAbstractionLayer::Storage::load(_stream, sizeof(_stream));
+
+	memcpy(&PID_Tuning, _stream, sizeof(s_pid_tunings));
+
+	memcpy(&Drive_Settings, _stream + sizeof(s_pid_tunings), sizeof(s_drive_settings));
+
+	memcpy(&User_Settings, _stream + (sizeof(s_pid_tunings)+sizeof(s_drive_settings)), sizeof(s_user_settings));
+
+	Spin::Configuration::set_working_data();
 	
-	Spin::Configuration::_assign_encoder_vectors(Spin::Configuration::Drive_Settings.Encoder_Config.Encoder_Mode);
-	
-	Spin::ClosedLoop::Velocity::Acceleration_Per_Cycle = pow((Spin::Configuration::User_Settings.Motor_Accel_Rate_Per_Second * (1 / PID_PERIODS_IN_INTERVAL)),2);
-	
-	return Enums::e_config_results::Incomplete_Config;
+	//If there are no pointers for the rpm vectors then reload defaults
+	//and indicate this config is invalid. It is either new or corrupted
+	if (spindle_encoder.func_vectors.Rpm_Compute == NULL)
+	{
+		load_defaults();
+		
+		return Enums::e_config_results::Encoder_Not_Available;
+	}
+	return Enums::e_config_results::Encoder_Available;
 }
 
 void Spin::Configuration::save()
 {
-	uint16_t size = sizeof(s_pid_tunings);
 	//Convert pid settings to char*
-	char * stream;
-	char _stream_PID_Tuning[(sizeof(s_pid_tunings))];
-	memcpy(&_stream_PID_Tuning, &PID_Tuning, sizeof(s_pid_tunings));
-	HardwareAbstractionLayer::Storage::save(_stream_PID_Tuning,size);
-
-	size = sizeof(s_drive_settings);
-	//Convert drive settings to char*
-	char _stream_Drive_Settings[(sizeof(s_drive_settings))];
-	memcpy(&_stream_Drive_Settings, &Drive_Settings, sizeof(s_drive_settings));
-	HardwareAbstractionLayer::Storage::save(_stream_Drive_Settings,size);
-
-	size = sizeof(s_user_settings);
-	//Convert drive settings to char*
-	char _stream_User_Settings[(sizeof(s_user_settings))];
-	memcpy(&_stream_User_Settings, &User_Settings, sizeof(s_user_settings));
-	HardwareAbstractionLayer::Storage::save(_stream_User_Settings,size);
+	char stream[(sizeof(s_pid_tunings) + sizeof(s_drive_settings) + sizeof(s_user_settings))];
+	
+	memcpy(stream, &PID_Tuning, sizeof(s_pid_tunings));
+	
+	memcpy(stream + sizeof(s_pid_tunings), &Drive_Settings, sizeof(s_drive_settings));
+	
+	memcpy(stream + (sizeof(s_pid_tunings)+sizeof(s_drive_settings)), &User_Settings, sizeof(s_user_settings));
+	
+	HardwareAbstractionLayer::Storage::save(stream, sizeof(stream));
 
 
+}
+
+void Spin::Configuration::set_working_data()
+{
+	Spin::Configuration::_assign_encoder_vectors(Spin::Configuration::Drive_Settings.Encoder_Config.Encoder_Mode);
+	Spin::ClosedLoop::Velocity::Acceleration_Per_Cycle = pow((Spin::Configuration::User_Settings.Motor_Accel_Rate_Per_Second * (1 / PID_PERIODS_IN_INTERVAL)),2);
+	
 }
 
 void Spin::Configuration::_assign_encoder_vectors(Enums::e_encoder_modes encoder_type)
 {
 	switch (encoder_type)
 	{
+		case Spin::Enums::e_encoder_modes::No_Encoder:
+		{
+			//no encoder found, effectively we are doing nothing
+			
+			spindle_encoder.func_vectors.Encoder_Vector_A = HardwareAbstractionLayer::Encoder::Reader.no_vect;
+			spindle_encoder.func_vectors.Encoder_Vector_B = HardwareAbstractionLayer::Encoder::Reader.no_vect;
+			spindle_encoder.func_vectors.Encoder_Vector_Z = HardwareAbstractionLayer::Encoder::Reader.no_vect;
+
+			//assign the appropriate function to calculate rpm for quadrature WITHOUT index
+			spindle_encoder.func_vectors.Rpm_Compute = HardwareAbstractionLayer::Encoder::Calculator.no_vect;
+
+			//Since it is quadrature multiply ppr times 4 to get cpr.
+			spindle_encoder.ticks_per_rev = 0;
+			
+			break;
+		}
+		case Spin::Enums::e_encoder_modes::Index_Only:
+		{
+			//we only have an index pulse. 
+			spindle_encoder.func_vectors.Encoder_Vector_A = HardwareAbstractionLayer::Encoder::Reader.no_vect;
+			spindle_encoder.func_vectors.Encoder_Vector_B = HardwareAbstractionLayer::Encoder::Reader.no_vect;
+			spindle_encoder.func_vectors.Encoder_Vector_Z = HardwareAbstractionLayer::Encoder::Reader.read_chz;
+
+			//assign the appropriate function to calculate rpm for quadrature WITHOUT index
+			spindle_encoder.func_vectors.Rpm_Compute = HardwareAbstractionLayer::Encoder::Calculator.get_rpm_index;
+
+			//Since it is quadrature multiply ppr times 4 to get cpr.
+			spindle_encoder.ticks_per_rev = 0;
+			
+			break;
+		}
 		case Spin::Enums::e_encoder_modes::Quadrature:
 		{
-			//assign function pointers to what needs to be called for thisencoder type.
-			spindle_encoder.func_vectors.Encoder_Vector_A = HardwareAbstractionLayer::Encoder::read_quad;
-			spindle_encoder.func_vectors.Encoder_Vector_B = HardwareAbstractionLayer::Encoder::read_quad;
-			spindle_encoder.func_vectors.Encoder_Vector_Z = HardwareAbstractionLayer::Encoder::no_vect;
+			//assign function pointers to what needs to be called for this encoder type.
+			spindle_encoder.func_vectors.Encoder_Vector_A = HardwareAbstractionLayer::Encoder::Reader.read_quad;
+			spindle_encoder.func_vectors.Encoder_Vector_B = HardwareAbstractionLayer::Encoder::Reader.read_quad;
+			spindle_encoder.func_vectors.Encoder_Vector_Z = HardwareAbstractionLayer::Encoder::Reader.no_vect;
 
-			//assign the appropriate function to calcualte rpm for quadrature WITHOUT index
-			spindle_encoder.func_vectors.Rpm_Compute = HardwareAbstractionLayer::Encoder::get_rpm_quad;
+			//assign the appropriate function to calculate rpm for quadrature WITHOUT index
+			spindle_encoder.func_vectors.Rpm_Compute = HardwareAbstractionLayer::Encoder::Calculator.get_rpm_quad;
 			
 			//configure the hardware to read a quadrature WITHOUT an index pulse.
-			HardwareAbstractionLayer::Encoder::configure_encoder_quadrature();
+			HardwareAbstractionLayer::Encoder::Configurator.configure_encoder_quadrature();
 			
 			//Since it is quadrature multiply ppr times 4 to get cpr.
-			Spin::Configuration::Drive_Settings.Encoder_Config.Encoder_Ticks_Per_Rev *= 4;
+			spindle_encoder.ticks_per_rev
+			= Spin::Configuration::Drive_Settings.Encoder_Config.Encoder_PPR_Value * 4;
+			break;
+		}
+		case Spin::Enums::e_encoder_modes::Quadrature_wIndex:
+		{
+			//assign function pointers to what needs to be called for this encoder type.
+			spindle_encoder.func_vectors.Encoder_Vector_A = HardwareAbstractionLayer::Encoder::Reader.read_quad_with_z;
+			spindle_encoder.func_vectors.Encoder_Vector_B = HardwareAbstractionLayer::Encoder::Reader.read_quad_with_z;
+			spindle_encoder.func_vectors.Encoder_Vector_Z = HardwareAbstractionLayer::Encoder::Reader.read_chz;
+
+			//assign the appropriate function to calculate rpm for quadrature WITHOUT index
+			spindle_encoder.func_vectors.Rpm_Compute = HardwareAbstractionLayer::Encoder::Calculator.get_rpm_quad;
+			
+			//configure the hardware to read a quadrature WITHOUT an index pulse.
+			HardwareAbstractionLayer::Encoder::Configurator.configure_encoder_quadrature_w_z();
+			
+			//Since it is quadrature multiply ppr times 4 to get cpr.
+			spindle_encoder.ticks_per_rev
+			= Spin::Configuration::Drive_Settings.Encoder_Config.Encoder_PPR_Value * 4;
 			break;
 		}
 		default:
-		break;
+		{
+			Spin::Driver::Controller::host_serial.print_string("unknown encoder type!\r\n");
+			break;
+		}
+		
 	}
 }
 
@@ -170,24 +242,16 @@ Spin::Enums::e_config_results Spin::Configuration::_config_encoder()
 	//disable the drive
 	HardwareAbstractionLayer::Outputs::disable_output();
 	//configure the encoder for all signals
-	HardwareAbstractionLayer::Encoder::config_cha();
-	HardwareAbstractionLayer::Encoder::config_chb();
-	HardwareAbstractionLayer::Encoder::config_chz();
-	HardwareAbstractionLayer::Encoder::initialize();
-	
+	HardwareAbstractionLayer::Encoder::Configurator.configure_test_channels();
+		
 	//Set output to half. 0 or max val might make the motor spin waaay to fast all at once.
 	uint32_t current_output = Spin::Configuration::Drive_Settings.Max_PWM_Output/2;
 	
 	//set output to current
+	HardwareAbstractionLayer::Outputs::set_direction(Spin::Enums::e_directions::Forward);
 	HardwareAbstractionLayer::Outputs::enable_output();
 	HardwareAbstractionLayer::Outputs::update_output(current_output);
-	HardwareAbstractionLayer::Outputs::set_direction(Spin::Enums::e_directions::Forward);
-	//Wait for 1000ms and see if we had encoder events
-	//This interval bit is set by a timer, so we just
-	//set and wait for it.
 	
-	//Spin::Driver::Controller::host_serial.print_string("chans:");
-	//Spin::Driver::Controller::host_serial.print_int32(extern_encoder__active_channels);
 	spindle_encoder.active_channels = 0;
 	for (int i=0;i<6;i++)
 	//while(1)
@@ -198,7 +262,7 @@ Spin::Enums::e_config_results Spin::Configuration::_config_encoder()
 			since quadrature with index is all the features we can support, if we
 			detect that encoder type, we can stop this loop early.
 			*/
-			HardwareAbstractionLayer::Encoder::get_active_channels();
+			HardwareAbstractionLayer::Encoder::Reader.read_active_channels();
 			
 			if (spindle_encoder.active_channels == (int)Enums::e_encoder_modes::Quadrature_wIndex)
 			break;
@@ -234,23 +298,37 @@ Spin::Enums::e_config_results Spin::Configuration::_config_encoder()
 	*/
 	Configuration::Drive_Settings.Encoder_Config.Encoder_Mode = (Spin::Enums::e_encoder_modes) spindle_encoder.active_channels;
 	//Now that the encoder type is known we can set the pointer for the isrs to call when something happens
-	
+	Spin::Configuration::_assign_encoder_vectors(Configuration::Drive_Settings.Encoder_Config.Encoder_Mode);
+
+	//now ask the user for the PPR value.
+	Drive_Settings.Encoder_Config.Encoder_PPR_Value = 0;
+	while (Drive_Settings.Encoder_Config.Encoder_PPR_Value == 0)
+	{
+		Drive_Settings.Encoder_Config.Encoder_PPR_Value = input_int32("ENC_PPR?\r\n\0");
+		if (Drive_Settings.Encoder_Config.Encoder_PPR_Value <= 0)
+		{
+			write_message("ENC_FAL\r\n\0");
+			Drive_Settings.Encoder_Config.Encoder_PPR_Value = 0;
+			return Spin::Enums::e_config_results::Encoder_Not_Available;
+		}
+		break;
+	}
 
 	Spin::Driver::Controller::host_serial.print_string("ENC_CHN:");
 	//This will cover most encoders, but I handle quadrature and quadrature with index different
 	if (spindle_encoder.active_channels & ENC_CHA_TRK_BIT)
 	{
-		spindle_encoder.func_vectors.Encoder_Vector_A = HardwareAbstractionLayer::Encoder::read_cha;
+		spindle_encoder.func_vectors.Encoder_Vector_A = HardwareAbstractionLayer::Encoder::Reader.read_cha;
 		Spin::Driver::Controller::host_serial.print_string("A");
 	}
 	if (spindle_encoder.active_channels & ENC_CHB_TRK_BIT)
 	{
-		spindle_encoder.func_vectors.Encoder_Vector_B = HardwareAbstractionLayer::Encoder::read_chb;
+		spindle_encoder.func_vectors.Encoder_Vector_B = HardwareAbstractionLayer::Encoder::Reader.read_chb;
 		Spin::Driver::Controller::host_serial.print_string("B");
 	}
 	if (spindle_encoder.active_channels & ENC_CHZ_TRK_BIT)
 	{
-		spindle_encoder.func_vectors.Encoder_Vector_Z = HardwareAbstractionLayer::Encoder::read_chz;
+		spindle_encoder.func_vectors.Encoder_Vector_Z = HardwareAbstractionLayer::Encoder::Reader.read_chz;
 		Spin::Driver::Controller::host_serial.print_string("Z");
 	}
 	//Special handler for quadrature because they report direction too.
@@ -258,28 +336,16 @@ Spin::Enums::e_config_results Spin::Configuration::_config_encoder()
 	|| Configuration::Drive_Settings.Encoder_Config.Encoder_Mode == Spin::Enums::e_encoder_modes::Quadrature_wIndex)
 	{
 		Spin::Driver::Controller::host_serial.print_string(" QD");
-		spindle_encoder.func_vectors.Encoder_Vector_A = HardwareAbstractionLayer::Encoder::read_quad;
-		spindle_encoder.func_vectors.Encoder_Vector_B = HardwareAbstractionLayer::Encoder::read_quad;
+		spindle_encoder.func_vectors.Encoder_Vector_A = HardwareAbstractionLayer::Encoder::Reader.read_quad;
+		spindle_encoder.func_vectors.Encoder_Vector_B = HardwareAbstractionLayer::Encoder::Reader.read_quad;
 		if (Configuration::Drive_Settings.Encoder_Config.Encoder_Mode == Spin::Enums::e_encoder_modes::Quadrature_wIndex)
 		{
-			spindle_encoder.func_vectors.Encoder_Vector_B = HardwareAbstractionLayer::Encoder::read_chz;
+			spindle_encoder.func_vectors.Encoder_Vector_B = HardwareAbstractionLayer::Encoder::Reader.read_chz;
 			Spin::Driver::Controller::host_serial.print_string(" I");
 		}
 	}
 	Spin::Driver::Controller::host_serial.print_string("\r\n");
-	//now ask the user for the PPR value.
-	Drive_Settings.Encoder_Config.Encoder_Ticks_Per_Rev = 0;
-	while (Drive_Settings.Encoder_Config.Encoder_Ticks_Per_Rev == 0)
-	{
-		Drive_Settings.Encoder_Config.Encoder_Ticks_Per_Rev = input_int32("ENC_PPR?\r\n\0");
-		if (Drive_Settings.Encoder_Config.Encoder_Ticks_Per_Rev < 0)
-		{
-			write_message("ENC_FAL\r\n\0");
-			Drive_Settings.Encoder_Config.Encoder_Ticks_Per_Rev = 0;
-			return Spin::Enums::e_config_results::Encoder_Not_Available;
-		}
-		break;
-	}
+	
 	
 	//Here we need to run a forward/reverse test to determine the proper direction of the encoder
 	
@@ -302,7 +368,7 @@ Spin::Enums::e_config_results Spin::Configuration::_config_encoder()
 			since quadrature with index is all the features we can support, if we
 			detect that encoder type, we can stop this loop early.
 			*/
-			HardwareAbstractionLayer::Encoder::get_active_channels();
+			HardwareAbstractionLayer::Encoder::Reader.read_active_channels();
 			
 			if (spindle_encoder.direction != 0)
 			break;
@@ -370,6 +436,7 @@ int32_t Spin::Configuration::input_int32(char * message)
 			return _var;
 		}
 	}
+	return 0;
 }
 
 uint32_t Spin::Configuration::input_uint32(char * message)

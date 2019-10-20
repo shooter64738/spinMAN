@@ -10,8 +10,8 @@
 #ifndef __C_SERIAL_AVR_328_H__
 #define __C_SERIAL_AVR_328_H__
 
-#include "..\..\..\..\Serial\c_Serial.h"
-#include "..\..\..\..\hardware_def.h"
+#include "../../../../Serial/c_Serial.h"
+#include "../../../../hardware_def.h"
 
 namespace Hardware_Abstraction_Layer
 {

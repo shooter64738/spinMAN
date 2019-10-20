@@ -2,9 +2,6 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <ClCompile Include="..\..\..\main.cpp" />
-    <ClCompile Include="Platform Specific\c_encoder_win.cpp">
-      <Filter>Platform Specific</Filter>
-    </ClCompile>
     <ClCompile Include="Platform Specific\c_inputs_win.cpp">
       <Filter>Platform Specific</Filter>
     </ClCompile>
@@ -47,12 +44,21 @@
     <ClCompile Include="Platform Specific\c_storage_win.cpp">
       <Filter>Platform Specific</Filter>
     </ClCompile>
+    <ClCompile Include="Platform Specific\Encoder\c_encoder_win.cpp">
+      <Filter>Platform Specific\Encoder</Filter>
+    </ClCompile>
+    <ClCompile Include="Platform Specific\Encoder\Configurators\c_configurator.cpp">
+      <Filter>Platform Specific\Encoder\Configurator</Filter>
+    </ClCompile>
+    <ClCompile Include="Platform Specific\Encoder\Calculators\c_calculators.cpp">
+      <Filter>Platform Specific\Encoder\Calculators</Filter>
+    </ClCompile>
+    <ClCompile Include="Platform Specific\Encoder\Readers\c_readers.cpp">
+      <Filter>Platform Specific\Encoder\Readers</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\hardware_def.h" />
-    <ClInclude Include="Platform Specific\c_encoder_win.h">
-      <Filter>Platform Specific</Filter>
-    </ClInclude>
     <ClInclude Include="Platform Specific\c_inputs_win.h">
       <Filter>Platform Specific</Filter>
     </ClInclude>
@@ -106,6 +112,18 @@
     <ClInclude Include="Platform Specific\c_storage_win.h">
       <Filter>Platform Specific</Filter>
     </ClInclude>
+    <ClInclude Include="Platform Specific\Encoder\c_encoder_win.h">
+      <Filter>Platform Specific\Encoder</Filter>
+    </ClInclude>
+    <ClInclude Include="Platform Specific\Encoder\Configurators\c_configurator.h">
+      <Filter>Platform Specific\Encoder\Configurator</Filter>
+    </ClInclude>
+    <ClInclude Include="Platform Specific\Encoder\Calculators\c_calculators.h">
+      <Filter>Platform Specific\Encoder\Calculators</Filter>
+    </ClInclude>
+    <ClInclude Include="Platform Specific\Encoder\Readers\c_readers.h">
+      <Filter>Platform Specific\Encoder\Readers</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Platform Specific">
@@ -122,6 +140,18 @@
     </Filter>
     <Filter Include="driver">
       <UniqueIdentifier>{f346c4f4-bc19-4a80-8ca2-a430a88c83ff}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Platform Specific\Encoder">
+      <UniqueIdentifier>{32c15e6e-70ce-40e0-9ac2-77de396b314b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Platform Specific\Encoder\Configurator">
+      <UniqueIdentifier>{7d7a8578-ca84-46e8-9716-f46b4872dcbb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Platform Specific\Encoder\Calculators">
+      <UniqueIdentifier>{dd3880a0-74a4-4580-bf9e-2fd3e7a361a9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Platform Specific\Encoder\Readers">
+      <UniqueIdentifier>{d14a60f9-7a4e-4add-8df4-b3de066f64cf}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

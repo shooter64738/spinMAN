@@ -22,11 +22,14 @@
     <ClCompile Include="..\..\..\main.cpp" />
     <ClCompile Include="..\..\..\Serial\c_Serial.cpp" />
     <ClCompile Include="Platform Specific\c_core_win.cpp" />
-    <ClCompile Include="Platform Specific\c_encoder_win.cpp" />
     <ClCompile Include="Platform Specific\c_inputs_win.cpp" />
     <ClCompile Include="Platform Specific\c_outputs_win.cpp" />
     <ClCompile Include="Platform Specific\c_serial_win.cpp" />
     <ClCompile Include="Platform Specific\c_storage_win.cpp" />
+    <ClCompile Include="Platform Specific\Encoder\Calculators\c_calculators.cpp" />
+    <ClCompile Include="Platform Specific\Encoder\Configurators\c_configurator.cpp" />
+    <ClCompile Include="Platform Specific\Encoder\c_encoder_win.cpp" />
+    <ClCompile Include="Platform Specific\Encoder\Readers\c_readers.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\bit_manipulation.h" />
@@ -45,11 +48,14 @@
     <ClInclude Include="..\..\..\Serial\c_Serial.h" />
     <ClInclude Include="..\..\..\Serial\s_buffer.h" />
     <ClInclude Include="Platform Specific\c_core_win.h" />
-    <ClInclude Include="Platform Specific\c_encoder_win.h" />
     <ClInclude Include="Platform Specific\c_inputs_win.h" />
     <ClInclude Include="Platform Specific\c_outputs_win.h" />
     <ClInclude Include="Platform Specific\c_serial_win.h" />
     <ClInclude Include="Platform Specific\c_storage_win.h" />
+    <ClInclude Include="Platform Specific\Encoder\Calculators\c_calculators.h" />
+    <ClInclude Include="Platform Specific\Encoder\Configurators\c_configurator.h" />
+    <ClInclude Include="Platform Specific\Encoder\c_encoder_win.h" />
+    <ClInclude Include="Platform Specific\Encoder\Readers\c_readers.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\..\..\README.md" />
