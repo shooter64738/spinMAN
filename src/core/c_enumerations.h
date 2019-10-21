@@ -37,10 +37,9 @@ namespace Spin
 		enum class e_position_states
 		{
 			Invalid = 0,
-			Accel_To_Target = 1,
-			On_Target = 2,
-			Decel_To_Target = 3,
-			Target_Exceeded = 4
+			Accel_To_Target_Forward = 1,
+			Accel_To_Target_Reverse = 2,
+			On_Target = 3
 
 		};
 		

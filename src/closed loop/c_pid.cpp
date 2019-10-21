@@ -56,7 +56,7 @@ void Spin::ClosedLoop::Pid::Calculate(int32_t setPoint, int32_t processValue)
 	
 	errors.process = (setPoint - processValue);
 	
-	errors.direction = (errors.direction < 0) ? -1 : 1;
+	errors.direction = (errors.process < 0) ? -1 : 1;
 
 	Spin::ClosedLoop::Pid::_set_p_term();//<--calculate p term from error and p factor
 	Spin::ClosedLoop::Pid::_set_i_term();//<--calculate i term from i factor and accumulated error

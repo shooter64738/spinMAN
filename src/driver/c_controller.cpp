@@ -109,7 +109,10 @@ void Spin::Driver::Controller::sync_out_in_control()
 	}
 	
 	//Set the output mode to the mode specified by input
-	if (Spin::Input::Controls.direction != Spin::Output::Controls.direction)
+	//Velocity modes direction is controlled by the user. Positions direction
+	//is controlled itnernally to reach its target
+	if (Spin::Input::Controls.in_mode != Spin::Enums::e_drive_modes::Position
+		&& (Spin::Input::Controls.direction != Spin::Output::Controls.direction))
 	{
 		
 		
@@ -179,7 +182,7 @@ void Spin::Driver::Controller::check_pid_cycle()
 
 void Spin::Driver::Controller::process()
 {
-	if (BitTst(extern_input__intervals, RPT_INTERVAL_BIT)) //<--one second interval for general purpose reporting
+	//if (BitTst(extern_input__intervals, RPT_INTERVAL_BIT)) //<--one second interval for general purpose reporting
 	{
 		BitClr_(extern_input__intervals, RPT_INTERVAL_BIT);
 
