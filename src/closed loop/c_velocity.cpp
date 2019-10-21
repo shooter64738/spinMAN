@@ -45,6 +45,7 @@ void Spin::ClosedLoop::Velocity::step(int32_t target, int32_t actual)
 	HardwareAbstractionLayer::Outputs::update_output(pwm_out);
 
 }
+
 bool Spin::ClosedLoop::Velocity::_check_range(int32_t target_rpm)
 {
 	//see if we are being requested to go faster/slower than the rpm range settings

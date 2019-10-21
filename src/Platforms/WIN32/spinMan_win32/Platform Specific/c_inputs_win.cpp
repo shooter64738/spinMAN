@@ -61,7 +61,7 @@ void HardwareAbstractionLayer::Inputs::synch_hardware_inputs()
 	uint8_t CONTROL_PORT_PIN_ADDRESS = 0;
 	BitSet_(CONTROL_PORT_PIN_ADDRESS, ENABLE_PIN);
 	//BitSet_(CONTROL_PORT_PIN_ADDRESS, MODE_PIN_A);
-	//BitSet_(CONTROL_PORT_PIN_ADDRESS, MODE_PIN_B);
+	BitSet_(CONTROL_PORT_PIN_ADDRESS, MODE_PIN_B);
 
 	uint8_t current = CONTROL_PORT_PIN_ADDRESS;
 	HardwareAbstractionLayer::Inputs::synch_hardware_inputs(current);
@@ -206,7 +206,7 @@ void HardwareAbstractionLayer::Inputs::timer2_compa_vect_thread()
 	{
 		//this is a simulated pulse count from timer 1
 		TIMER_1.TCNT += 2;
-		spindle_encoder.position++;
+		spindle_encoder.position = 50; // ++;
 		//only run a step timer tick if the 'timer' is enabled
 		if (TIMER_2.TIMSK & (1 << OCIE2A))
 		{

@@ -15,6 +15,7 @@
 #include "volatile_encoder_externs.h"
 #include "volatile_input_externs.h"
 #include "../closed loop/c_velocity.h"
+#include "../closed loop/c_position.h"
 #include "../closed loop/c_pid.h"
 
 
@@ -39,12 +40,7 @@ void Spin::Driver::Controller::initialize()
 
 	HardwareAbstractionLayer::Core::start_interrupts();//<--Start HW interrupts
 	Spin::Configuration::initiailize();//<--init and set default config
-	
 	Spin::Configuration::load();//<--load user settings. if none exist defaults will load
-	//Spin::Configuration::save();
-
-
-	HardwareAbstractionLayer::Encoder::initialize();//<--init encoder after configuration loads.
 	Spin::Input::initialize();//<--init the hardware inputs
 	Spin::Output::initialize();//<--init hardware optputs
 	
@@ -81,7 +77,7 @@ void Spin::Driver::Controller::initialize()
 //63800 starts motor
 void Spin::Driver::Controller::run()
 {
-	user_pos = 2000;
+	user_pos = 200;
 	
 	while (1)
 	{
@@ -171,7 +167,7 @@ void Spin::Driver::Controller::check_pid_cycle()
 			case Enums::e_drive_modes::Position:
 			{
 				Spin::Input::Controls.target = user_pos;
-				Spin::ClosedLoop::Pid::Calculate(Spin::Input::Controls.target, spindle_encoder.position);
+				Spin::ClosedLoop::Position::step(Spin::Input::Controls.target, spindle_encoder.position);
 				break;
 			}
 			default:
