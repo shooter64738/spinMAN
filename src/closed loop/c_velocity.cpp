@@ -96,7 +96,7 @@ int32_t Spin::ClosedLoop::Velocity::_clamp_acceleration(int32_t target, int32_t 
 		if ((target - actual)>Acceleration_Per_Cycle)
 		{
 			//clamp accel output
-			target = actual + Acceleration_Per_Cycle;
+			target = actual + Acceleration_Per_Cycle + 1;
 		}
 		else
 		{
@@ -110,7 +110,7 @@ int32_t Spin::ClosedLoop::Velocity::_clamp_acceleration(int32_t target, int32_t 
 		if ((actual - target)>Acceleration_Per_Cycle)
 		{
 			//clamp decel output
-			target = actual - Acceleration_Per_Cycle;
+			target = actual - Acceleration_Per_Cycle + 1;
 		}
 		else
 		{

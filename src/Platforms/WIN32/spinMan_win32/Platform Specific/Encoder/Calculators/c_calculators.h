@@ -23,6 +23,7 @@ public:
 	static void get_rpm();
 	static void get_rpm_quad();
 	static void get_rpm_index();
+	static void get_rpm_single_ch();
 protected:
 private:
 

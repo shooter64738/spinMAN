@@ -18,8 +18,10 @@ namespace Spin
 		enum class e_config_results
 		{
 			Incomplete_Config = 0,
-			Encoder_Not_Available = 1,
-			Encoder_Available = 2,
+			Configuration_Ok = 1,
+			Encoder_Not_Available = 2,
+			Encoder_Available = 3,
+			No_Encoder_PPR_Set = 4
 		};
 
 		enum class e_velocity_states

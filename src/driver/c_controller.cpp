@@ -41,7 +41,7 @@ void Spin::Driver::Controller::initialize()
 	Spin::Configuration::initiailize();//<--init and set default config
 	
 	Spin::Configuration::load();//<--load user settings. if none exist defaults will load
-	Spin::Configuration::save();
+	//Spin::Configuration::save();
 
 
 	HardwareAbstractionLayer::Encoder::initialize();//<--init encoder after configuration loads.
@@ -85,13 +85,11 @@ void Spin::Driver::Controller::run()
 	
 	while (1)
 	{
-
 		HardwareAbstractionLayer::Inputs::synch_hardware_inputs();//<--read input states from hardware
 		Spin::Driver::Controller::sync_out_in_control();//<--synch input/output control states
 		HardwareAbstractionLayer::Encoder::Calculator.get_rpm();//<--check rpm, recalculate if its time
 		Spin::Driver::Controller::check_pid_cycle();//<--check if pid time has expired, and update if needed
 		Spin::Driver::Controller::process();//<--General processing. Perhaps an LCD update
-		
 	}
 }
 
@@ -189,6 +187,21 @@ void Spin::Driver::Controller::process()
 	{
 		BitClr_(extern_input__intervals, RPT_INTERVAL_BIT);
 
+		Spin::Driver::Controller::host_serial.print_string(" (P):");
+		Spin::Driver::Controller::host_serial.print_int32(Spin::Configuration::PID_Tuning.Velocity.Kp);
+		Spin::Driver::Controller::host_serial.print_string(" (I):");
+		Spin::Driver::Controller::host_serial.print_int32(Spin::Configuration::PID_Tuning.Velocity.Ki);
+		Spin::Driver::Controller::host_serial.print_string(" (D):");
+		Spin::Driver::Controller::host_serial.print_int32(Spin::Configuration::PID_Tuning.Velocity.Kd);
+		Spin::Driver::Controller::host_serial.print_string(" (A)ccel:");
+		Spin::Driver::Controller::host_serial.print_int32(Spin::Configuration::User_Settings.Motor_Accel_Rate_Per_Second);
+		Spin::Driver::Controller::host_serial.print_string(" (E)nc:");
+		Spin::Driver::Controller::host_serial.print_int32((int)Spin::Configuration::Drive_Settings.Encoder_Config.Encoder_Mode);
+		Spin::Driver::Controller::host_serial.print_string(" (C)ppr:");
+		Spin::Driver::Controller::host_serial.print_int32(Spin::Configuration::Drive_Settings.Encoder_Config.Encoder_PPR_Value);
+		Spin::Driver::Controller::host_serial.print_string(" (U)SAVE");
+		Spin::Driver::Controller::host_serial.print_string(" (R)RESET");
+
 		Spin::Driver::Controller::host_serial.print_string(" mod:");
 		Spin::Driver::Controller::host_serial.print_int32((int)Spin::Input::Controls.in_mode);
 		Spin::Driver::Controller::host_serial.print_string(" ena:");
@@ -205,19 +218,14 @@ void Spin::Driver::Controller::process()
 		Spin::Driver::Controller::host_serial.print_int32((int)Spin::Input::Controls.direction);
 		Spin::Driver::Controller::host_serial.print_string(" p_pid:");
 		Spin::Driver::Controller::host_serial.print_int32(Spin::ClosedLoop::Pid::output);
-		Spin::Driver::Controller::host_serial.print_string(" p_trm:");
-		Spin::Driver::Controller::host_serial.print_int32(Spin::Configuration::PID_Tuning.Velocity.Kp);
-		Spin::Driver::Controller::host_serial.print_string(" i_trm:");
-		Spin::Driver::Controller::host_serial.print_int32(Spin::Configuration::PID_Tuning.Velocity.Ki);
-		Spin::Driver::Controller::host_serial.print_string(" d_trm:");
-		Spin::Driver::Controller::host_serial.print_int32(Spin::Configuration::PID_Tuning.Velocity.Kd);
-		Spin::Driver::Controller::host_serial.print_string(" accel:");
-		Spin::Driver::Controller::host_serial.print_int32(Spin::Configuration::User_Settings.Motor_Accel_Rate_Per_Second);
+		
+
+
 
 		if (Spin::Driver::Controller::host_serial.HasEOL())
 		{
 			uint8_t byte = toupper(Spin::Driver::Controller::host_serial.Peek());
-			if (byte == 'P' || byte == 'I' || byte == 'D' || byte == 'A')
+			if (byte == 'P' || byte == 'I' || byte == 'D' || byte == 'A' || byte == 'E' || byte == 'C' || byte == 'R')
 			{
 				Spin::Driver::Controller::host_serial.Get();
 
@@ -249,7 +257,7 @@ void Spin::Driver::Controller::process()
 			}
 			else if (byte == 'D')
 			{
-				Spin::Configuration::PID_Tuning.Velocity.Kd = p_var;				
+				Spin::Configuration::PID_Tuning.Velocity.Kd = p_var;
 				Spin::ClosedLoop::Pid::Load_Factors_For_Mode(Spin::Input::Controls.in_mode);
 			}
 			else if (byte == 'A')
@@ -260,7 +268,23 @@ void Spin::Driver::Controller::process()
 			else if (byte == 'U')
 			{
 				Spin::Configuration::save();
-				Spin::Driver::Controller::host_serial.print_string(" SAVED!!!");
+				Spin::Driver::Controller::host_serial.print_string(" \r\nSAVED!!!");
+			}
+			else if (byte == 'E')
+			{
+				Spin::Configuration::Drive_Settings.Encoder_Config.Encoder_Mode = (Spin::Enums::e_encoder_modes) p_var;
+				Spin::Configuration::_assign_encoder_vectors(Spin::Configuration::Drive_Settings.Encoder_Config.Encoder_Mode);
+			}
+			else if (byte == 'C')
+			{
+				Spin::Configuration::Drive_Settings.Encoder_Config.Encoder_PPR_Value = p_var;
+			}
+			else if (byte == 'R')
+			{
+				char stream[96];
+				memcpy(stream,0,96);
+				HardwareAbstractionLayer::Storage::save(stream, sizeof(stream));
+				Spin::Driver::Controller::host_serial.print_string(" \r\nRESET!!!");
 			}
 			else
 			{

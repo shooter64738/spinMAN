@@ -22,6 +22,8 @@ void c_readers::read_cha()
 
 	if (spindle_encoder.position >spindle_encoder.ticks_per_rev)
 	spindle_encoder.position = 1;
+	
+	extern_encoder__ticks_at_time++;
 }
 
 void c_readers::read_chb()
@@ -31,6 +33,8 @@ void c_readers::read_chb()
 
 	if (spindle_encoder.position >spindle_encoder.ticks_per_rev)
 	spindle_encoder.position = 1;
+	
+	extern_encoder__ticks_at_time++;
 }
 
 void c_readers::read_chz()

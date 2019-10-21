@@ -42,7 +42,7 @@ namespace Spin
 		{
 			uint16_t Encoder_PPR_Value;/*<----------- How many pulses the encoder will produce in one rotation.
 			This is NOT the CPR value for a quadrature encoder. If
-			ticks per rev is 100 then the CPRR value will be 400 in
+			ticks per rev is 100 then the CPR value will be 400 in
 			quadrature mode.*/
 			Enums::e_encoder_modes Encoder_Mode;/*<-- The mode the encoder will run in. Either simple counter,
 			quadrature mode, or quadrature with index*/
@@ -109,7 +109,7 @@ namespace Spin
 		static Spin::Enums::e_config_results load();
 		static void save();
 		
-		static void set_working_data();
+		static Spin::Enums::e_config_results set_working_data();
 		static void auto_config(char * mdoe);
 		static Spin::Enums::e_config_results _config_encoder();
 		static void write_message(char * message);
@@ -118,7 +118,8 @@ namespace Spin
 		static uint32_t input_uint32(char * message);
 		protected:
 		private:
-		static void _assign_encoder_vectors(Enums::e_encoder_modes encoder_type);
+		public:
+		static Spin::Enums::e_config_results _assign_encoder_vectors(Enums::e_encoder_modes encoder_type);
 
 	}; //c_configuration
 };
