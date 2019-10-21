@@ -167,7 +167,7 @@ void Spin::Driver::Controller::check_pid_cycle()
 			case Enums::e_drive_modes::Position:
 			{
 				Spin::Input::Controls.target = user_pos;
-				Spin::ClosedLoop::Position::step(Spin::Input::Controls.target, spindle_encoder.position);
+				Spin::ClosedLoop::Position::step(Spin::Input::Controls.target, spindle_encoder.position );
 				break;
 			}
 			default:
