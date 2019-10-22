@@ -36,7 +36,7 @@ void Spin::ClosedLoop::Position::step(int32_t target, int32_t actual)
 	_set_state();
 
 	if (State != Spin::Enums::e_position_states::On_Target
-		&& Spin::Output::Controls.direction != Corrections.Nearest_Direction)
+	&& Spin::Output::Controls.direction != Corrections.Nearest_Direction)
 	{
 		Spin::Output::set_direction(Corrections.Nearest_Direction);
 		Spin::ClosedLoop::Pid::Reset_integral();
@@ -50,12 +50,14 @@ void Spin::ClosedLoop::Position::step(int32_t target, int32_t actual)
 		Spin::ClosedLoop::Pid::Reset_integral();
 	}
 
-	//Do we want to hold EXACTLY the requested position?
-	/*if (!_check_tolerance(abs(target - actual)))
-		return;*/
-
 	//set the error value externally for pid to correct
 	Spin::ClosedLoop::Pid::errors.process = Corrections.Nearest_Distance;
+
+	//Do we want to hold EXACTLY the requested position?
+	if (!_check_tolerance(Corrections.Nearest_Distance))
+	return;
+
+	
 	//send in only the actual position.
 	Spin::ClosedLoop::Pid::Calculate(actual);
 
@@ -69,8 +71,8 @@ bool Spin::ClosedLoop::Position::_check_range(int32_t target_position)
 {
 	//see if we are being requested to go further than the encoder allows
 	if ((target_position > spindle_encoder.ticks_per_rev)
-		|| (target_position < -spindle_encoder.ticks_per_rev))
-		return false;//<--ignore a value that is too high
+	|| (target_position < -spindle_encoder.ticks_per_rev))
+	return false;//<--ignore a value that is too high
 
 
 	return true;//<-- value is 'in range'
@@ -80,8 +82,8 @@ bool Spin::ClosedLoop::Position::_check_tolerance(int32_t target_position)
 {
 	//see if we are being requested to adjust a value that is still within tolerance
 	if ((Spin::Configuration::User_Settings.Motor_Position_Error != -1)
-		&& (target_position < Spin::Configuration::User_Settings.Motor_Position_Error))
-		return false;//<--ignore a value that is within tolerance
+	&& (target_position < Spin::Configuration::User_Settings.Motor_Position_Error))
+	return false;//<--ignore a value that is within tolerance
 
 
 	return true;//<-- value is out of tolerance
@@ -93,9 +95,9 @@ void Spin::ClosedLoop::Position::_set_state()
 	if ((Corrections.Nearest_Distance - Spin::Configuration::User_Settings.Motor_Position_Error) > 0)
 	{
 		if (Corrections.Nearest_Direction == Spin::Enums::e_directions::Forward)
-			State = Spin::Enums::e_position_states::Accel_To_Target_Forward;
+		State = Spin::Enums::e_position_states::Accel_To_Target_Forward;
 		else if (Corrections.Nearest_Direction == Spin::Enums::e_directions::Reverse)
-			State = Spin::Enums::e_position_states::Accel_To_Target_Reverse;
+		State = Spin::Enums::e_position_states::Accel_To_Target_Reverse;
 	}
 	else
 	{
@@ -111,19 +113,20 @@ int32_t Spin::ClosedLoop::Position::_clamp_acceleration(int32_t target, int32_t 
 void Spin::ClosedLoop::Position::_find_closest_error(int32_t target, int32_t actual)
 {
 	uint32_t raw_diff = target > actual ? target - actual : actual - target;
-	uint32_t mod_diff = std::fmodl(raw_diff, spindle_encoder.ticks_per_rev);
+	uint32_t mod_diff = raw_diff % spindle_encoder.ticks_per_rev;
+	//uint32_t mod_diff = std::fmodl(raw_diff, spindle_encoder.ticks_per_rev);
 	uint32_t dist = mod_diff > spindle_encoder.half_ticks_per_rev ? spindle_encoder.ticks_per_rev - mod_diff : mod_diff;
 
 	if (mod_diff > (spindle_encoder.half_ticks_per_rev)) {
 		//There is a shorter path in opposite direction
 		Corrections.Nearest_Direction = Spin::Enums::e_directions::Forward;
 		if (target > actual)
-			Corrections.Nearest_Direction = Spin::Enums::e_directions::Reverse;
+		Corrections.Nearest_Direction = Spin::Enums::e_directions::Reverse;
 	}
 	else {
 		Corrections.Nearest_Direction = Spin::Enums::e_directions::Forward;
 		if (actual > target)
-			Corrections.Nearest_Direction = Spin::Enums::e_directions::Reverse;
+		Corrections.Nearest_Direction = Spin::Enums::e_directions::Reverse;
 
 	}
 	Corrections.Nearest_Distance = dist;

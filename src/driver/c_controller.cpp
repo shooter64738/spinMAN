@@ -183,7 +183,7 @@ void Spin::Driver::Controller::check_pid_cycle()
 void Spin::Driver::Controller::process()
 {
 	
-	if (BitTst(extern_input__intervals, RPT_INTERVAL_BIT)) //<--one second interval for general purpose reporting
+	//if (BitTst(extern_input__intervals, RPT_INTERVAL_BIT)) //<--one second interval for general purpose reporting
 	{
 		BitClr_(extern_input__intervals, RPT_INTERVAL_BIT);
 

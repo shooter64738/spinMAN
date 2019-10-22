@@ -71,10 +71,10 @@ void HardwareAbstractionLayer::Inputs::synch_hardware_inputs(uint8_t current)
 {
 	//mode is read from 2 pins
 	uint8_t mode_pins = 0;
-	if (BitTst(current, MODE_PIN_A))
+	/*if (BitTst(current, MODE_PIN_A))
 		mode_pins++;
 	if (BitTst(current, MODE_PIN_B))
-		mode_pins++;
+		mode_pins++;*/
 	Spin::Input::Controls.in_mode = (Spin::Enums::e_drive_modes)(mode_pins + 1);
 
 	if (BitTst(current, ENABLE_PIN))

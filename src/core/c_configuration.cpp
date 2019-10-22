@@ -54,9 +54,9 @@ void Spin::Configuration::load_defaults()
 	Spin::Configuration::initiailize();
 
 	//Some default pid values
-	Spin::Configuration::PID_Tuning.Position.Kp = 4;
-	Spin::Configuration::PID_Tuning.Position.Ki = 0;
-	Spin::Configuration::PID_Tuning.Position.Kd = 1;
+	Spin::Configuration::PID_Tuning.Position.Kp = 10;
+	Spin::Configuration::PID_Tuning.Position.Ki = 5;
+	Spin::Configuration::PID_Tuning.Position.Kd = 2;
 
 	Spin::Configuration::PID_Tuning.Velocity.Kp = 4;
 	Spin::Configuration::PID_Tuning.Velocity.Ki = 4;
@@ -120,10 +120,10 @@ Spin::Enums::e_config_results Spin::Configuration::load()
 	
 	//If there are no pointers for the rpm vectors then reload defaults
 	//and indicate this config is invalid. It is either new or corrupted
-	if (key != 222)
+	if (key != 001)
 	{
 		load_defaults();
-		
+		Spin::Driver::Controller::host_serial.print_string("RUNNING DEFAULTS!\r\n");
 		return Enums::e_config_results::Encoder_Not_Available;
 	}
 	return Enums::e_config_results::Encoder_Available;
