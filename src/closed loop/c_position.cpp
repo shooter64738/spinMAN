@@ -33,6 +33,7 @@ void Spin::ClosedLoop::Position::step(int32_t target, int32_t actual)
 	Spin::Configuration::User_Settings.Motor_Position_Error = 10;
 
 	_find_closest_error(target, actual);
+	
 	_set_state();
 
 	if (State != Spin::Enums::e_position_states::On_Target

@@ -7,6 +7,8 @@
 
 //64178 minimum turn on value.
 #include "c_pid.h"
+#include <math.h>
+
 static Spin::Configuration::s_pid_factors factors;
 static Spin::Configuration::s_pid_factors terms;
 Spin::Configuration::s_pid_factors *Spin::ClosedLoop::Pid::active_factors;
@@ -14,7 +16,9 @@ float Spin::ClosedLoop::Pid::scaler;
 
 Spin::ClosedLoop::Pid::s_errors Spin::ClosedLoop::Pid::errors;
 static int32_t old_process_value = 0;
+
 int32_t Spin::ClosedLoop::Pid::output = 0;
+int32_t Spin::ClosedLoop::Pid::raw_output = 0;
 
 
 void Spin::ClosedLoop::Pid::Set_Factors(Spin::Configuration::s_pid_factors init_factors)
@@ -110,7 +114,8 @@ void Spin::ClosedLoop::Pid::_internal_pid_comp(int32_t processValue)
 	float f_i = terms.Ki*scaler;
 	float f_d = terms.Kd*scaler;
 
-	Spin::ClosedLoop::Pid::output = abs(((f_p)+(f_i)+(f_d)) / PID_SCALING_FACTOR);
+	Spin::ClosedLoop::Pid::raw_output = abs(((f_p)+(f_i)+(f_d)) / PID_SCALING_FACTOR);
+	Spin::ClosedLoop::Pid::output = Spin::ClosedLoop::Pid::raw_output;
 
 	_clamp_output();//<--gold output between the PID_MAX and PID_MIN values.
 	old_process_value = processValue;

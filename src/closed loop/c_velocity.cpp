@@ -8,6 +8,7 @@
 #include "c_velocity.h"
 #include "../hardware_def.h"
 #include "c_pid.h" //<--Also includes c_configuration.h
+#include <math.h>
 
 static int32_t pwm_out = 0;
 static Spin::Enums::e_velocity_states State;
@@ -98,27 +99,26 @@ int32_t Spin::ClosedLoop::Velocity::_clamp_acceleration(int32_t target, int32_t 
 		if ((target - actual)>Acceleration_Per_Cycle)
 		{
 			//clamp accel output
-			target = actual + Acceleration_Per_Cycle + 1;
+			target = actual + (Acceleration_Per_Cycle + 1);
 		}
-		else
-		{
-			//handing this over to pid entirely now
-			State = Spin::Enums::e_velocity_states::Cruise;
-		}
+		//else
+		//{
+		//	//handing this over to pid entirely now
+		//	State = Spin::Enums::e_velocity_states::Cruise;
+		//}
 	}
-	else if ((target - Spin::Configuration::User_Settings.Motor_RPM_Error) < actual)
+	else if (State == Spin::Enums::e_velocity_states::Decelerate)
 	{
-		State = Spin::Enums::e_velocity_states::Decelerate;
 		if ((actual - target)>Acceleration_Per_Cycle)
 		{
 			//clamp decel output
-			target = actual - Acceleration_Per_Cycle + 1;
+			target = actual - (Acceleration_Per_Cycle + 1);
 		}
-		else
-		{
-			//handing this over to pid entirely now
-			State = Spin::Enums::e_velocity_states::Cruise;
-		}
+		//else
+		//{
+		//	//handing this over to pid entirely now
+		//	State = Spin::Enums::e_velocity_states::Cruise;
+		//}
 	}
 	return target;
 }

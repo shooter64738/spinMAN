@@ -218,9 +218,9 @@ void Spin::Driver::Controller::process()
 		Spin::Driver::Controller::host_serial.print_int32((int)Spin::Output::Controls.direction);
 		Spin::Driver::Controller::host_serial.print_string(" p_pid:");
 		Spin::Driver::Controller::host_serial.print_int32(Spin::ClosedLoop::Pid::output);
+		Spin::Driver::Controller::host_serial.print_string(" raw_pid:");
+		Spin::Driver::Controller::host_serial.print_int32(Spin::ClosedLoop::Pid::raw_output);
 		
-
-
 
 		if (Spin::Driver::Controller::host_serial.HasEOL())
 		{
