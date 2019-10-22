@@ -52,25 +52,18 @@ void Spin::ClosedLoop::Pid::Reset_integral()
 	errors.accumulated = 0;
 }
 
+void Spin::ClosedLoop::Pid::Calculate(int32_t processValue)
+{
+	//Assume the error value was set external to pid, and we use that
+	
+	_internal_pid_comp(processValue);
+}
+
 void Spin::ClosedLoop::Pid::Calculate(int32_t setPoint, int32_t processValue)
 {
-	
-	errors.process = (setPoint - processValue);
-	
-	errors.direction = (errors.process < 0) ? -1 : 1;
-
-	Spin::ClosedLoop::Pid::_set_p_term();//<--calculate p term from error and p factor
-	Spin::ClosedLoop::Pid::_set_i_term();//<--calculate i term from i factor and accumulated error
-	Spin::ClosedLoop::Pid::_set_d_term(processValue);//<--calculate d term from d factor and current error
-	
-	float f_p = terms.Kp*scaler;
-	float f_i = terms.Ki*scaler;
-	float f_d = terms.Kd*scaler;
-	
-	Spin::ClosedLoop::Pid::output = abs(((f_p) + (f_i) + (f_d)) / PID_SCALING_FACTOR) ;
-	
-	_clamp_output();//<--gold output between the PID_MAX and PID_MIN values.
-	old_process_value = processValue;
+	//Assume the error value set externally should NOT be used. Get our own internal value.
+	_internal_error_comp(setPoint, processValue);
+	_internal_pid_comp(processValue);
 }
 
 void Spin::ClosedLoop::Pid::Reset()
@@ -79,19 +72,19 @@ void Spin::ClosedLoop::Pid::Reset()
 	factors.Kd = 0;
 	factors.Ki = 0;
 	factors.Kd = 0;
-	
+
 	//reset max values
 	errors.max_process = 0;
 	errors.max_accumulated = 0;
-	
+
 	//reset terms, errors, outputs
 	Spin::ClosedLoop::Pid::Restart();
-	
+
 }
 
 void Spin::ClosedLoop::Pid::Restart()
 {
-	
+
 	//reset terms
 	terms.Kp = 0;
 	terms.Ki = 0;
@@ -100,11 +93,33 @@ void Spin::ClosedLoop::Pid::Restart()
 	errors.process = 0;
 	errors.previous = 0;
 	errors.accumulated = 0;
-	
+
 	errors.direction = 0;
 
 	old_process_value = 0;
 	output = 0;
+}
+
+void Spin::ClosedLoop::Pid::_internal_pid_comp(int32_t processValue)
+{
+	Spin::ClosedLoop::Pid::_set_p_term();//<--calculate p term from error and p factor
+	Spin::ClosedLoop::Pid::_set_i_term();//<--calculate i term from i factor and accumulated error
+	Spin::ClosedLoop::Pid::_set_d_term(processValue);//<--calculate d term from d factor and current error
+
+	float f_p = terms.Kp*scaler;
+	float f_i = terms.Ki*scaler;
+	float f_d = terms.Kd*scaler;
+
+	Spin::ClosedLoop::Pid::output = abs(((f_p)+(f_i)+(f_d)) / PID_SCALING_FACTOR);
+
+	_clamp_output();//<--gold output between the PID_MAX and PID_MIN values.
+	old_process_value = processValue;
+}
+
+void Spin::ClosedLoop::Pid::_internal_error_comp(int32_t setPoint, int32_t processValue)
+{
+	errors.process = (setPoint - processValue);
+	errors.direction = (errors.process < 0) ? -1 : 1;
 }
 
 void Spin::ClosedLoop::Pid::_clamp_output()
@@ -122,7 +137,7 @@ void Spin::ClosedLoop::Pid::_clamp_output()
 		//If we have reached output saturation, limit integral windup
 		errors.accumulated -= (errors.process);
 	}
-	
+
 	/*
 	lag_correction is used to determine the 'jump' value for the pid output.
 	If 65535 is totally off, and the motor doesnt react until 64000, that is
@@ -137,7 +152,7 @@ void Spin::ClosedLoop::Pid::_clamp_output()
 	{
 		output = Spin::Configuration::Drive_Settings.Max_PWM_Output - Spin::ClosedLoop::Pid::output;
 		//adjust for lag
-		output -=(PID_MAX - Spin::Configuration::Drive_Settings.Drive_Min_On_Value);
+		output -= (PID_MAX - Spin::Configuration::Drive_Settings.Drive_Min_On_Value);
 		if (output < PID_MIN) output = PID_MIN;
 	}
 	else
@@ -146,7 +161,7 @@ void Spin::ClosedLoop::Pid::_clamp_output()
 		output += Spin::Configuration::Drive_Settings.Drive_Min_On_Value;
 		if (output > PID_MAX) output = PID_MAX;
 	}
-	
+
 }
 
 void Spin::ClosedLoop::Pid::_set_p_term()
@@ -158,7 +173,7 @@ void Spin::ClosedLoop::Pid::_set_p_term()
 	else if (errors.process < -(errors.max_process)) {
 		terms.Kp = -(INT16_MAX);
 	}
-	else{
+	else {
 		terms.Kp = factors.Kp * errors.process;
 	}
 }

@@ -20,6 +20,8 @@ namespace Spin
 		{
 			//variables
 			public:
+
+
 			protected:
 			private:
 
@@ -29,8 +31,9 @@ namespace Spin
 			static void step(int32_t target, int32_t actual);
 			static bool _check_range(int32_t target_rpm);
 			static bool _check_tolerance(int32_t target_rpm);
-			static void _set_state(int32_t target, int32_t actual);
+			static void _set_state();
 			static int32_t _clamp_acceleration(int32_t target, int32_t actual);
+			static void _find_closest_error(int32_t target, int32_t actual);
 			protected:
 			private:
 		};

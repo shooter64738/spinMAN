@@ -16,6 +16,7 @@ struct s_encoder
 	volatile uint16_t sensed_rpm;
 	volatile uint16_t period_ticks;
 	uint16_t ticks_per_rev;
+	uint16_t half_ticks_per_rev;
 	s_encoder_func_pointers func_vectors;
 	
 };

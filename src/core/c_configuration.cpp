@@ -183,6 +183,7 @@ Spin::Enums::e_config_results Spin::Configuration::_assign_encoder_vectors(Enums
 
 			//Since it is quadrature multiply ppr times 4 to get cpr.
 			spindle_encoder.ticks_per_rev = 0;
+			spindle_encoder.half_ticks_per_rev = 0;
 			
 			break;
 		}
@@ -198,6 +199,7 @@ Spin::Enums::e_config_results Spin::Configuration::_assign_encoder_vectors(Enums
 
 			//Since it is quadrature multiply ppr times 4 to get cpr.
 			spindle_encoder.ticks_per_rev = 0;
+			spindle_encoder.half_ticks_per_rev = 0;
 			
 			break;
 		}
@@ -217,6 +219,8 @@ Spin::Enums::e_config_results Spin::Configuration::_assign_encoder_vectors(Enums
 			//Since it is quadrature multiply ppr times 4 to get cpr.
 			spindle_encoder.ticks_per_rev
 			= Spin::Configuration::Drive_Settings.Encoder_Config.Encoder_PPR_Value * 4;
+			spindle_encoder.half_ticks_per_rev
+				= Spin::Configuration::Drive_Settings.Encoder_Config.Encoder_PPR_Value * 2;
 			
 			break;
 		}
@@ -237,6 +241,9 @@ Spin::Enums::e_config_results Spin::Configuration::_assign_encoder_vectors(Enums
 			//Since it is quadrature multiply ppr times 4 to get cpr.
 			spindle_encoder.ticks_per_rev
 			= Spin::Configuration::Drive_Settings.Encoder_Config.Encoder_PPR_Value * 4;
+			spindle_encoder.half_ticks_per_rev
+				= Spin::Configuration::Drive_Settings.Encoder_Config.Encoder_PPR_Value * 2;
+
 			break;
 		}
 		case Spin::Enums::e_encoder_modes::Simple_ChanA:
@@ -255,6 +262,9 @@ Spin::Enums::e_config_results Spin::Configuration::_assign_encoder_vectors(Enums
 			//Since it is quadrature multiply ppr times 4 to get cpr.
 			spindle_encoder.ticks_per_rev
 			= Spin::Configuration::Drive_Settings.Encoder_Config.Encoder_PPR_Value;
+
+			spindle_encoder.half_ticks_per_rev
+				= Spin::Configuration::Drive_Settings.Encoder_Config.Encoder_PPR_Value / 2;
 			break;
 		}
 		case Spin::Enums::e_encoder_modes::Simple_ChanB:
@@ -273,6 +283,9 @@ Spin::Enums::e_config_results Spin::Configuration::_assign_encoder_vectors(Enums
 			//Since it is quadrature multiply ppr times 4 to get cpr.
 			spindle_encoder.ticks_per_rev
 			= Spin::Configuration::Drive_Settings.Encoder_Config.Encoder_PPR_Value;
+
+			spindle_encoder.half_ticks_per_rev
+				= Spin::Configuration::Drive_Settings.Encoder_Config.Encoder_PPR_Value / 2;
 			break;
 		}
 		default:

@@ -16,6 +16,13 @@
 static int32_t pwm_out = 0;
 static Spin::Enums::e_position_states State;
 
+struct s_correction
+{
+	Spin::Enums::e_directions Nearest_Direction;
+	uint32_t Nearest_Distance;
+};
+
+static s_correction Corrections;
 
 void Spin::ClosedLoop::Position::step(int32_t target, int32_t actual)
 {
@@ -25,70 +32,32 @@ void Spin::ClosedLoop::Position::step(int32_t target, int32_t actual)
 	Spin::Configuration::Drive_Settings.Drive_Min_On_Value = 64500;
 	Spin::Configuration::User_Settings.Motor_Position_Error = 10;
 
-	_set_state(target, actual);
-	target = _clamp_acceleration(target, actual);
-	int32_t nearest_direction = (target - actual) - (spindle_encoder.ticks_per_rev / 2);
+	_find_closest_error(target, actual);
+	_set_state();
 
-	State = nearest_direction < 0 ? Spin::Enums::e_position_states::Accel_To_Target_Forward
-		: Spin::Enums::e_position_states::Accel_To_Target_Reverse;
-
-	if (nearest_direction < 0)
+	if (State != Spin::Enums::e_position_states::On_Target
+		&& Spin::Output::Controls.direction != Corrections.Nearest_Direction)
 	{
-		State = Spin::Enums::e_position_states::Accel_To_Target_Forward;
-		if (Spin::Output::Controls.direction != Spin::Enums::e_directions::Forward)
-		{
-			//but we currently arent going forward, change to forward direction
-			Spin::Output::set_direction(Spin::Enums::e_directions::Forward);
-			//since we toggled directions, we should reset the integral windup
-			Spin::ClosedLoop::Pid::Reset_integral();
-		}
+		Spin::Output::set_direction(Corrections.Nearest_Direction);
+		Spin::ClosedLoop::Pid::Reset_integral();
 	}
-	else
+	//If state says we are on target...
+	else if (State == Spin::Enums::e_position_states::On_Target)
 	{
-		State = Spin::Enums::e_position_states::Accel_To_Target_Reverse;
-		if (Spin::Output::Controls.direction != Spin::Enums::e_directions::Reverse)
-		{
-			//but we currently arent going reverse, change to reverse direction
-			Spin::Output::set_direction(Spin::Enums::e_directions::Reverse);
-			//since we toggled directions, we should reset the integral windup
-			Spin::ClosedLoop::Pid::Reset_integral();
-		}
-		actual += spindle_encoder.ticks_per_rev;
+		//we set output to zero.
+		Spin::ClosedLoop::Pid::output = 0;
+		//since we toggled directions, we should reset the integral windup
+		Spin::ClosedLoop::Pid::Reset_integral();
 	}
-	////If state says we need to go forward....
-	//if (State == Spin::Enums::e_position_states::Accel_To_Target_Forward
-	//	&& Spin::Output::Controls.direction != Spin::Enums::e_directions::Reverse)
-	//{
-	//	//but we currently arent going forward, change to forward direction
-	//	Spin::Output::set_direction(Spin::Enums::e_directions::Reverse);
-	//	//since we toggled directions, we should reset the integral windup
-	//	Spin::ClosedLoop::Pid::Reset_integral();
-	//}
-	////If state says we need to go reverse....
-	//else if (State == Spin::Enums::e_position_states::Accel_To_Target_Reverse
-	//	&& Spin::Output::Controls.direction != Spin::Enums::e_directions::Forward)
-	//{
-	//	//but we currently arent going reverse, change to reverse direction
-	//	Spin::Output::set_direction(Spin::Enums::e_directions::Forward);
-	//	//since we toggled directions, we should reset the integral windup
-	//	Spin::ClosedLoop::Pid::Reset_integral();
-	//}
-	////If state says we are on target...
-	//else if (State == Spin::Enums::e_position_states::On_Target)
-	//{
-	//	//we set output to zero.
-	//	Spin::ClosedLoop::Pid::output = 0;
-	//	//since we toggled directions, we should reset the integral windup
-	//	Spin::ClosedLoop::Pid::Reset_integral();
-	//}
 
 	//Do we want to hold EXACTLY the requested position?
 	/*if (!_check_tolerance(abs(target - actual)))
 		return;*/
 
-	Spin::ClosedLoop::Pid::Calculate(target, actual);
-
-
+	//set the error value externally for pid to correct
+	Spin::ClosedLoop::Pid::errors.process = Corrections.Nearest_Distance;
+	//send in only the actual position.
+	Spin::ClosedLoop::Pid::Calculate(actual);
 
 	pwm_out = Spin::ClosedLoop::Pid::output;
 
@@ -118,20 +87,19 @@ bool Spin::ClosedLoop::Position::_check_tolerance(int32_t target_position)
 	return true;//<-- value is out of tolerance
 }
 
-void Spin::ClosedLoop::Position::_set_state(int32_t target, int32_t actual)
+void Spin::ClosedLoop::Position::_set_state()
 {
-	//Set states
-	if ((target - Spin::Configuration::User_Settings.Motor_Position_Error) > actual)
+	//Nearest distance is always a positive value so we only need to know if its > 0
+	if ((Corrections.Nearest_Distance - Spin::Configuration::User_Settings.Motor_Position_Error) > 0)
 	{
-		State = Spin::Enums::e_position_states::Accel_To_Target_Forward;
-	}
-	else if ((target + Spin::Configuration::User_Settings.Motor_Position_Error) < actual)
-	{
-		State = Spin::Enums::e_position_states::Accel_To_Target_Reverse;
+		if (Corrections.Nearest_Direction == Spin::Enums::e_directions::Forward)
+			State = Spin::Enums::e_position_states::Accel_To_Target_Forward;
+		else if (Corrections.Nearest_Direction == Spin::Enums::e_directions::Reverse)
+			State = Spin::Enums::e_position_states::Accel_To_Target_Reverse;
 	}
 	else
 	{
-		//we are at speed, do nothing
+		//we are on target, do nothing
 		State = Spin::Enums::e_position_states::On_Target;
 	}
 }
@@ -140,3 +108,24 @@ int32_t Spin::ClosedLoop::Position::_clamp_acceleration(int32_t target, int32_t 
 {
 	return target;
 }
+void Spin::ClosedLoop::Position::_find_closest_error(int32_t target, int32_t actual)
+{
+	uint32_t raw_diff = target > actual ? target - actual : actual - target;
+	uint32_t mod_diff = std::fmodl(raw_diff, spindle_encoder.ticks_per_rev);
+	uint32_t dist = mod_diff > spindle_encoder.half_ticks_per_rev ? spindle_encoder.ticks_per_rev - mod_diff : mod_diff;
+
+	if (mod_diff > (spindle_encoder.half_ticks_per_rev)) {
+		//There is a shorter path in opposite direction
+		Corrections.Nearest_Direction = Spin::Enums::e_directions::Forward;
+		if (target > actual)
+			Corrections.Nearest_Direction = Spin::Enums::e_directions::Reverse;
+	}
+	else {
+		Corrections.Nearest_Direction = Spin::Enums::e_directions::Forward;
+		if (actual > target)
+			Corrections.Nearest_Direction = Spin::Enums::e_directions::Reverse;
+
+	}
+	Corrections.Nearest_Distance = dist;
+}
+
