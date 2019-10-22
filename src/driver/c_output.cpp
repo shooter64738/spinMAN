@@ -62,22 +62,26 @@ void Spin::Output::set_mode(Spin::Enums::e_drive_modes new_mode)
 	{
 		case Spin::Enums::e_drive_modes::Velocity:
 		{
+			Spin::ClosedLoop::Pid::active_factors = &Spin::Configuration::PID_Tuning.Velocity;
 			Spin::ClosedLoop::Pid::Set_Factors(Spin::Configuration::PID_Tuning.Velocity);
 			break;
 		}
 		case Spin::Enums::e_drive_modes::Position:
 		{
+			Spin::ClosedLoop::Pid::active_factors = &Spin::Configuration::PID_Tuning.Position;
 			Spin::ClosedLoop::Pid::Set_Factors(Spin::Configuration::PID_Tuning.Position);
 			break;
 		}
 		case Spin::Enums::e_drive_modes::Torque:
 		{
+			Spin::ClosedLoop::Pid::active_factors = &Spin::Configuration::PID_Tuning.Torque;
 			Spin::ClosedLoop::Pid::Set_Factors(Spin::Configuration::PID_Tuning.Torque);
 			break;
 		}
 
 		default:
 		{
+			Spin::ClosedLoop::Pid::active_factors = &Spin::Configuration::PID_Tuning.Velocity;
 			Spin::ClosedLoop::Pid::Set_Factors(Spin::Configuration::PID_Tuning.Velocity);
 			break;
 		}

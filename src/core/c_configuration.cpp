@@ -54,12 +54,12 @@ void Spin::Configuration::load_defaults()
 	Spin::Configuration::initiailize();
 
 	//Some default pid values
-	Spin::Configuration::PID_Tuning.Position.Kp = 1;
-	Spin::Configuration::PID_Tuning.Position.Ki = 1;
+	Spin::Configuration::PID_Tuning.Position.Kp = 4;
+	Spin::Configuration::PID_Tuning.Position.Ki = 0;
 	Spin::Configuration::PID_Tuning.Position.Kd = 1;
 
 	Spin::Configuration::PID_Tuning.Velocity.Kp = 4;
-	Spin::Configuration::PID_Tuning.Velocity.Ki = 5;
+	Spin::Configuration::PID_Tuning.Velocity.Ki = 4;
 	Spin::Configuration::PID_Tuning.Velocity.Kd = 1;
 
 	Spin::Configuration::PID_Tuning.Torque.Kp = 0;
@@ -86,7 +86,7 @@ void Spin::Configuration::load_defaults()
 	Spin::Configuration::User_Settings.Tool_Orientation = 0; //default to 0
 	Spin::Configuration::User_Settings.Default_Direction = Enums::e_directions::Free;//set to free spin.
 	
-	Spin::Configuration::Drive_Settings.Drive_Min_On_Value = 64088;
+	Spin::Configuration::Drive_Settings.Drive_Min_On_Value = 64188;
 	//Encoder has 100 pulses in a rotation.
 	//If quadrature mode is active the 100 pulses per rotation is multiplied by 4 (quadrature count)
 	Spin::Configuration::Drive_Settings.Encoder_Config.Encoder_PPR_Value = 100;

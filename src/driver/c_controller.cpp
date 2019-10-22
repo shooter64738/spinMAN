@@ -170,7 +170,7 @@ void Spin::Driver::Controller::check_pid_cycle()
 			case Enums::e_drive_modes::Position:
 			{
 				Spin::Input::Controls.target = user_pos;
-				Spin::ClosedLoop::Position::step(Spin::Input::Controls.target, spindle_encoder.position );
+				Spin::ClosedLoop::Position::step(Spin::Input::Controls.target, spindle_encoder.position);
 				break;
 			}
 			default:
@@ -182,16 +182,17 @@ void Spin::Driver::Controller::check_pid_cycle()
 
 void Spin::Driver::Controller::process()
 {
-	//if (BitTst(extern_input__intervals, RPT_INTERVAL_BIT)) //<--one second interval for general purpose reporting
+	
+	if (BitTst(extern_input__intervals, RPT_INTERVAL_BIT)) //<--one second interval for general purpose reporting
 	{
 		BitClr_(extern_input__intervals, RPT_INTERVAL_BIT);
 
 		Spin::Driver::Controller::host_serial.print_string(" (P):");
-		Spin::Driver::Controller::host_serial.print_int32(Spin::Configuration::PID_Tuning.Velocity.Kp);
+		Spin::Driver::Controller::host_serial.print_int32(Spin::ClosedLoop::Pid::active_factors->Kp);
 		Spin::Driver::Controller::host_serial.print_string(" (I):");
-		Spin::Driver::Controller::host_serial.print_int32(Spin::Configuration::PID_Tuning.Velocity.Ki);
+		Spin::Driver::Controller::host_serial.print_int32(Spin::ClosedLoop::Pid::active_factors->Ki);
 		Spin::Driver::Controller::host_serial.print_string(" (D):");
-		Spin::Driver::Controller::host_serial.print_int32(Spin::Configuration::PID_Tuning.Velocity.Kd);
+		Spin::Driver::Controller::host_serial.print_int32(Spin::ClosedLoop::Pid::active_factors->Kd);
 		Spin::Driver::Controller::host_serial.print_string(" (A)ccel:");
 		Spin::Driver::Controller::host_serial.print_int32(Spin::Configuration::User_Settings.Motor_Accel_Rate_Per_Second);
 		Spin::Driver::Controller::host_serial.print_string(" (E)nc:");
@@ -214,7 +215,7 @@ void Spin::Driver::Controller::process()
 		Spin::Driver::Controller::host_serial.print_string(" err:");
 		Spin::Driver::Controller::host_serial.print_int32(Spin::ClosedLoop::Pid::errors.process);
 		Spin::Driver::Controller::host_serial.print_string(" dir:");
-		Spin::Driver::Controller::host_serial.print_int32((int)Spin::Input::Controls.direction);
+		Spin::Driver::Controller::host_serial.print_int32((int)Spin::Output::Controls.direction);
 		Spin::Driver::Controller::host_serial.print_string(" p_pid:");
 		Spin::Driver::Controller::host_serial.print_int32(Spin::ClosedLoop::Pid::output);
 		
@@ -246,17 +247,17 @@ void Spin::Driver::Controller::process()
 
 			if (byte == 'P')
 			{
-				Spin::Configuration::PID_Tuning.Velocity.Kp = p_var;
+				Spin::ClosedLoop::Pid::active_factors->Kp = p_var;
 				Spin::ClosedLoop::Pid::Load_Factors_For_Mode(Spin::Input::Controls.in_mode);
 			}
 			else if (byte == 'I')
 			{
-				Spin::Configuration::PID_Tuning.Velocity.Ki = p_var;
+				Spin::ClosedLoop::Pid::active_factors->Ki = p_var;
 				Spin::ClosedLoop::Pid::Load_Factors_For_Mode(Spin::Input::Controls.in_mode);
 			}
 			else if (byte == 'D')
 			{
-				Spin::Configuration::PID_Tuning.Velocity.Kd = p_var;
+				Spin::ClosedLoop::Pid::active_factors->Kd = p_var;
 				Spin::ClosedLoop::Pid::Load_Factors_For_Mode(Spin::Input::Controls.in_mode);
 			}
 			else if (byte == 'A')

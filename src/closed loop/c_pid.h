@@ -27,7 +27,7 @@ namespace Spin
 		class Pid
 		{
 			//variables
-		public:
+			public:
 			struct s_errors
 			{
 				int32_t process;
@@ -42,20 +42,22 @@ namespace Spin
 			static s_errors errors;
 			static int32_t output;
 
-		protected:
-		private:
+			static Spin::Configuration::s_pid_factors *active_factors;
+			static float scaler;
+			protected:
+			private:
 
 			//functions
-		public:
+			public:
 			static void Set_Factors(Spin::Configuration::s_pid_factors factors);
 			static void Load_Factors_For_Mode(Spin::Enums::e_drive_modes Mode);
 			static void Reset_integral();
 			static void Calculate(int32_t setPoint, int32_t processValue);
 			static void Reset();
 			static void Restart();
-		protected:
+			protected:
 
-		private:
+			private:
 			static void _clamp_output();
 			static void _set_p_term();
 			static void _set_i_term();
