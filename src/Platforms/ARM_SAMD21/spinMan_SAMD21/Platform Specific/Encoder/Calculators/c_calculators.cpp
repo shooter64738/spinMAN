@@ -40,24 +40,6 @@ void c_calculators::get_rpm_index()
 	spindle_encoder.sensed_rpm = rps;
 }
 
-
-void c_calculators::get_rpm_single_ch()
-{
-	if (!BitTst(extern_input__intervals, RPM_INTERVAL_BIT))
-		return;//<--return if its not time
-
-	//In velocity mode we only care if the sensed rpm matches the input rpm
-	//In position mode we only care if the sensed position matches the input position.
-
-	BitClr_(extern_input__intervals, RPM_INTERVAL_BIT);
-
-	//doing some scaling up and down trying to avoid float math as much as possible.
-	int32_t rps = (((float)spindle_encoder.period_ticks * RPM_PERIODS_IN_INTERVAL) / (float)spindle_encoder.ticks_per_rev) * 60.0;
-
-
-	spindle_encoder.sensed_rpm = rps;
-}
-
 void c_calculators::get_rpm_quad()
 {
 	if (!BitTst(extern_input__intervals,RPM_INTERVAL_BIT))
@@ -72,5 +54,22 @@ void c_calculators::get_rpm_quad()
 	int32_t rps = (((float)spindle_encoder.period_ticks * RPM_PERIODS_IN_INTERVAL) /(float)spindle_encoder.ticks_per_rev) * 60.0;
 	
 	
-	//spindle_encoder.sensed_rpm = rps;
+	spindle_encoder.sensed_rpm = rps;
+}
+
+void c_calculators::get_rpm_single_ch()
+{
+	if (!BitTst(extern_input__intervals,RPM_INTERVAL_BIT))
+	return;//<--return if its not time
+	
+	//In velocity mode we only care if the sensed rpm matches the input rpm
+	//In position mode we only care if the sensed position matches the input position.
+
+	BitClr_(extern_input__intervals, RPM_INTERVAL_BIT);
+	
+	//doing some scaling up and down trying to avoid float math as much as possible.
+	int32_t rps = (((float)spindle_encoder.period_ticks * RPM_PERIODS_IN_INTERVAL) /(float)spindle_encoder.ticks_per_rev) * 60.0;
+	
+	
+	spindle_encoder.sensed_rpm = rps;
 }
