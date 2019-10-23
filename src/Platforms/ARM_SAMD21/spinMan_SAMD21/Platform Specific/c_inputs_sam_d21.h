@@ -3,21 +3,21 @@
 
 #include <stdint.h>
 
-#define IN_TCCRA TCCR0A
-#define IN_TCCRB TCCR0B
-#define IN_TCNT TCNT0
-#define IN_TIFR TIFR0
-#define IN_TOV TOV0
+#define IN_TCCRA 0//TCCR0A
+#define IN_TCCRB 0//TCCR0B
+#define IN_TCNT 0//TCNT0
+#define IN_TIFR 0//TIFR0
+#define IN_TOV 0//TOV0
 
 
-#define CONTROl_PORT PORTC
-#define CONTROl_PORT_DIRECTION DDRC
-#define CONTROL_PORT_PIN_ADDRESS PINC
-#define DIRECTION_PIN PINC0	//Nano pin A0
-#define MODE_PIN_A PINC1    //Nano pin A1
-#define MODE_PIN_B PINC2    //Nano pin A2
-#define ENABLE_PIN PINC3    //Nano pin A3
-#define ARM_PIN PINC4       //Nano pin A4
+#define CONTROl_PORT 0//PORTC
+#define CONTROl_PORT_DIRECTION 0//DDRC
+#define CONTROL_PORT_PIN_ADDRESS 0//PINC
+#define DIRECTION_PIN 0//PINC0	//Nano pin A0
+#define MODE_PIN_A 0//PINC1    //Nano pin A1
+#define MODE_PIN_B 0//PINC2    //Nano pin A2
+#define ENABLE_PIN 0//PINC3    //Nano pin A3
+#define ARM_PIN 0//PINC4       //Nano pin A4
 
 namespace HardwareAbstractionLayer
 {

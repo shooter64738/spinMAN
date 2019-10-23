@@ -1,7 +1,7 @@
 #ifndef __C_EEPROM_SAM_D21_H__
 #define __C_EEPROM_SAM_D21_H__
 
-
+#include <stdint.h>
 namespace HardwareAbstractionLayer
 {
 	class Storage

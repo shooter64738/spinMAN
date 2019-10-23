@@ -27,7 +27,7 @@
 #endif
 
 #ifdef __SAMD21G18AU__ 
-//#define F_CPU 16000000UL
+#define F_CPU 24000000UL
 #define PWM_RESOLUTION_BIT 16 //<--Used to keep pid output in an appropriate range.
 #define MAX_PWM_VALUE UINT16_MAX  //<--This is used to determine highest pwm output
 #define _NOP() do { __asm__ __volatile__ ("nop"); } while (0);

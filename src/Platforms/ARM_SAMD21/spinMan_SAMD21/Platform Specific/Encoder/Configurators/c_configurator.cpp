@@ -8,7 +8,7 @@
 
 #include "c_configurator.h"
 #include "../../../../../../driver/volatile_encoder_externs.h"
-#include "../c_encoder_avr_328.h"
+#include "../c_encoder_sam_d21.h"
 
 void c_configurator::config_chz()
 {
@@ -25,42 +25,23 @@ void c_configurator::config_chz()
 
 void c_configurator::config_cha()
 {
-	////Set the mask to check pins PB0-PB5
-	//PCMSK0 = (1<<PCINT0)|(1<<PCINT1)|(1<<PCINT2)|(1<<PCINT3);
-	////Set the interrupt for PORTB (PCIE0)
-	//PCICR |= (1<<PCIE0);
-	//PCIFR |= (1<<PCIF0);
-
 	//Setup encoder capture
-	DDRD &= ~(1 << DDD2);	//input mode
-	PORTD |= (1 << PORTD2);	//enable pullup
-	//DDRD &= ~(1 << DDD3);	//input mode
-	//PORTD |= (1 << PORTD3);	//enable pullup
-	////
+	//DDRD &= ~(1 << DDD2);	//input mode
+	//PORTD |= (1 << PORTD2);	//enable pullup
 	//Any change triggers
-	EICRA |= (1 << ISC00);	// Trigger on any change on INT0 PD2 (pin D2)
-	//EICRA |= (1 << ISC10);	// Trigger on any change on INT1 PD3 (pin D3)
-	EIMSK |= (1 << INT0);// | (1 << INT1);     // Enable external interrupt INT0, INT1
+	//EICRA |= (1 << ISC00);	// Trigger on any change on INT0 PD2 (pin D2)
+	//EIMSK |= (1 << INT0);// | (1 << INT1);     // Enable external interrupt INT0, INT1
 }
 
 void c_configurator::config_chb()
 {
-	////Set the mask to check pins PB0-PB5
-	//PCMSK0 = (1<<PCINT0)|(1<<PCINT1)|(1<<PCINT2)|(1<<PCINT3);
-	////Set the interrupt for PORTB (PCIE0)
-	//PCICR |= (1<<PCIE0);
-	//PCIFR |= (1<<PCIF0);
-
 	//Setup encoder capture
-	//DDRD &= ~(1 << DDD2);	//input mode
-	//PORTD |= (1 << PORTD2);	//enable pullup
-	DDRD &= ~(1 << DDD3);	//input mode
-	PORTD |= (1 << PORTD3);	//enable pullup
+	//DDRD &= ~(1 << DDD3);	//input mode
+	//PORTD |= (1 << PORTD3);	//enable pullup
 	////
 	//Any change triggers
-	//EICRA |= (1 << ISC00);	// Trigger on any change on INT0 PD2 (pin D2)
-	EICRA |= (1 << ISC10);	// Trigger on any change on INT1 PD3 (pin D3)
-	EIMSK |= (1 << INT1);// | (1 << INT1);     // Enable external interrupt INT0, INT1
+	//EICRA |= (1 << ISC10);	// Trigger on any change on INT1 PD3 (pin D3)
+	//EIMSK |= (1 << INT1);// | (1 << INT1);     // Enable external interrupt INT0, INT1
 }
 
 void c_configurator::configure_encoder_quadrature()
@@ -100,11 +81,11 @@ void c_configurator::configure_test_channels()
 void c_configurator::configure_disable_channels()
 {
 	//disable the hardware reading channel a. this will disable the isr
-	EICRA &= ~(1 << ISC00);	// Trigger on any change on INT0 PD2 (pin D2)
-	EIMSK &= ~(1 << INT0);// disable external interrupt INT0
+	//EICRA &= ~(1 << ISC00);	// Trigger on any change on INT0 PD2 (pin D2)
+	//EIMSK &= ~(1 << INT0);// disable external interrupt INT0
 	//disable the hardware reading channel b. this will disable the isr
-	EICRA &= ~(1 << ISC10);	// Trigger on any change on INT1 PD3 (pin D3)
-	EIMSK &= ~(1 << INT1);// disable external interrupt INT1
+	//EICRA &= ~(1 << ISC10);	// Trigger on any change on INT1 PD3 (pin D3)
+	//EIMSK &= ~(1 << INT1);// disable external interrupt INT1
 	//disable the hardware reading channel z. this will disable the isr
 	//PCMSK2 &= ~(1<<PCINT19); // disable pin change interrupt pcint19
 

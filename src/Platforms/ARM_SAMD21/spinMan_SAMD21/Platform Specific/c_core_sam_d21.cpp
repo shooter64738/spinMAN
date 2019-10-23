@@ -7,5 +7,5 @@ void HardwareAbstractionLayer::Core::initialize()
 
 void HardwareAbstractionLayer::Core::start_interrupts()
 {
-	sei();
+	//sei();
 }

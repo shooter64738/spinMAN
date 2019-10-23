@@ -19,8 +19,7 @@
 #include "../core/c_enumerations.h"
 
 
-#define TIMER_PRESCALE_MASK (1<<CS22) | (1<<CS20);  // set prescale factor of counter2 to 128 (16MHz/128 = 125000Hz)
-//static const float INV_ENCODER_TICKS_PER_REV = 1.0 / 400.0; //<--encoder ticks in a revolution
+#define TIMER_PRESCALE_MASK 0 //(1<<CS22) | (1<<CS20);  // set prescale factor of counter2 to 128 (16MHz/128 = 125000Hz)
 #define PRE_SCALER 128
 #define TIMER_FRQ_HZ 1000
 #define TIMER_TICKS_PER_SECOND (F_CPU/PRE_SCALER)/TIMER_FRQ_HZ //125000; //<--frequency in hz of the timer with the selected prescaler
