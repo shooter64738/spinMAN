@@ -114,8 +114,8 @@ void Spin::ClosedLoop::Pid::_internal_pid_comp(int32_t processValue)
 	float f_i = terms.Ki*scaler;
 	float f_d = terms.Kd*scaler;
 
-	Spin::ClosedLoop::Pid::raw_output = abs(((f_p)+(f_i)+(f_d)) / PID_SCALING_FACTOR);
-	Spin::ClosedLoop::Pid::output = Spin::ClosedLoop::Pid::raw_output;
+	Spin::ClosedLoop::Pid::raw_output = (((terms.Kp)+(terms.Ki)+(terms.Kd)) / PID_SCALING_FACTOR);
+	Spin::ClosedLoop::Pid::output = (Spin::ClosedLoop::Pid::raw_output);
 
 	_clamp_output();//<--gold output between the PID_MAX and PID_MIN values.
 	old_process_value = processValue;

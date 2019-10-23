@@ -23,6 +23,7 @@ void Spin::ClosedLoop::Velocity::step(int32_t target, int32_t actual)
 	return;
 
 	_set_state(target, actual);
+	
 	target = _clamp_acceleration(target, actual);
 
 	//First order of business is to get the pid value

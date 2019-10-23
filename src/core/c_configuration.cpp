@@ -58,7 +58,7 @@ void Spin::Configuration::load_defaults()
 	Spin::Configuration::PID_Tuning.Position.Ki = 5;
 	Spin::Configuration::PID_Tuning.Position.Kd = 2;
 
-	Spin::Configuration::PID_Tuning.Velocity.Kp = 4;
+	Spin::Configuration::PID_Tuning.Velocity.Kp = 2;
 	Spin::Configuration::PID_Tuning.Velocity.Ki = 4;
 	Spin::Configuration::PID_Tuning.Velocity.Kd = 1;
 
@@ -81,7 +81,7 @@ void Spin::Configuration::load_defaults()
 	Spin::Configuration::User_Settings.Motor_Min_RPM = -1; //default to no limit
 	Spin::Configuration::User_Settings.Motor_RPM_Error = 5; //default to +/-5rpm
 	Spin::Configuration::User_Settings.Motor_Position_Error = 5;
-	Spin::Configuration::User_Settings.Motor_Accel_Rate_Per_Second = 150;//default to 150rpm/sec/sec
+	Spin::Configuration::User_Settings.Motor_Accel_Rate_Per_Second = 350;//default to 150rpm/sec/sec
 	Spin::Configuration::User_Settings.Home_Position = 0; //default to 0
 	Spin::Configuration::User_Settings.Tool_Orientation = 0; //default to 0
 	Spin::Configuration::User_Settings.Default_Direction = Enums::e_directions::Free;//set to free spin.
