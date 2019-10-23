@@ -2,6 +2,7 @@
 
 void HardwareAbstractionLayer::Core::initialize()
 {
+SystemInit();
 	
 }
 

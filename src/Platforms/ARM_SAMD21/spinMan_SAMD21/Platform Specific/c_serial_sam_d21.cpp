@@ -1,18 +1,19 @@
-/* 
+/*
 * c_serial_avr_328.cpp
 *
 * Created: 2/27/2019 10:45:57 AM
 * Author: jeff_d
 */
-
+//https://www.avrfreaks.net/forum/no-asf-samd21-sercom-usart-rxc-interrupt-not-triggering
+//https://www.avrfreaks.net/forum/no-asf-samd21-sercom3-tutorial-help
 
 #include "c_serial_sam_d21.h"
 #include "c_core_sam_d21.h"
 #include "..\..\..\..\SAMD21_DFP\1.3.304\samd21a\include\sam.h"
 
-#define COM_PORT_COUNT 1 //<--how many serial ports does this hardware have (or) how many do you need to use. 
+#define COM_PORT_COUNT 1 //<--how many serial ports does this hardware have (or) how many do you need to use.
 s_Buffer Hardware_Abstraction_Layer::Serial::rxBuffer[COM_PORT_COUNT];
-
+PortGroup *Sercom_Port = &PORT->Group[0];
 
 void Hardware_Abstraction_Layer::Serial::initialize(uint8_t Port, uint32_t BaudRate)
 {
@@ -22,46 +23,57 @@ void Hardware_Abstraction_Layer::Serial::initialize(uint8_t Port, uint32_t BaudR
 	{
 		case 0:
 		{
-			// ==> Pin configuration
-			// Disable interrupts on Rx and Tx
-			PIOA->PIO_IDR = PIO_PA8A_URXD | PIO_PA9A_UTXD;
+			uint32_t baud = 115200;
+			
+			// FBAUD = ( fREF/ S) (1 – BAUD/65,536)
+			// FBAUD = baud frequency
+			// fref – SERCOM generic clock frequency
+			// S – Number of samples per bit
+			// BAUD – BAUD register value
+			uint64_t br = (uint64_t)65536 * (F_CPU - 16 * baud) / F_CPU; // Variable for baud rate
 
-			// Disable the PIO of the Rx and Tx pins so that the peripheral controller can use them
-			PIOA->PIO_PDR = PIO_PA8A_URXD | PIO_PA9A_UTXD;
+			Sercom_Port->DIRSET.reg = PORT_PA22;       // Set TX Pin direction to output
+			Sercom_Port->PINCFG[PIN_PA22].reg |= PORT_PINCFG_INEN;    // Set TX Pin config for input enable (required for usart)
+			Sercom_Port->PINCFG[PIN_PA22].reg |= PORT_PINCFG_PMUXEN;   // enable PMUX
+			Sercom_Port->PMUX[PIN_PA22>>1].bit.PMUXE = PORT_PMUX_PMUXE_C_Val; // Set the PMUX bit (if pin is even, PMUXE, if odd, PMUXO)
+			
+			Sercom_Port->DIRCLR.reg = PORT_PA23;       // Set RX Pin direction to input
+			Sercom_Port->PINCFG[PIN_PA23].reg |= PORT_PINCFG_INEN;    // Set RX Pin config for input enable
+			Sercom_Port->PINCFG[PIN_PA23].reg &= ~PORT_PINCFG_PULLEN;   // enable pullup/down resistor
+			Sercom_Port->PINCFG[PIN_PA23].reg |= PORT_PINCFG_PMUXEN;   // enable PMUX
+			Sercom_Port->PMUX[PIN_PA23>>1].bit.PMUXO = PORT_PMUX_PMUXE_C_Val; // Set the PMUX bit (if pin is even, PMUXE, if odd, PMUXO)
+			
+			PM->APBCMASK.reg |= PM_APBCMASK_SERCOM3;      // Set the PMUX for SERCOM3 and turn on module in PM
 
-			// Read current peripheral AB select register and set the Rx and Tx pins to 0 (Peripheral A function)
-			ul_sr = PIOA->PIO_ABSR;
-			PIOA->PIO_ABSR &= ~(PIO_PA8A_URXD | PIO_PA9A_UTXD) & ul_sr;
+			// Generic clock “SERCOM3_GCLK_ID_CORE” uses GCLK Generator 0 as source (generic clock source can be
+			// changed as per the user needs), so the SERCOM3 clock runs at 8MHz from OSC8M
+			GCLK->CLKCTRL.reg = GCLK_CLKCTRL_ID(SERCOM3_GCLK_ID_CORE) | GCLK_CLKCTRL_CLKEN | GCLK_CLKCTRL_GEN(0);
 
-			// Enable the pull up on the Rx and Tx pin
-			PIOA->PIO_PUER = PIO_PA8A_URXD | PIO_PA9A_UTXD;
+			// By setting the DORD bit LSB is transmitted first and setting the RXPO bit as 1
+			// corresponding SERCOM PAD[1] will be used for data reception, PAD[0] will be used as TxD
+			// pin by setting TXPO bit as 0, 16x over-sampling is selected by setting the SAMPR bit as
+			// 0, Generic clock is enabled in all sleep modes by setting RUNSTDBY bit as 1,
+			// USART clock mode is selected as USART with internal clock by setting MODE bit into 1.
+			SERCOM3->USART.CTRLA.reg = SERCOM_USART_CTRLA_DORD | SERCOM_USART_CTRLA_MODE_USART_INT_CLK | SERCOM_USART_CTRLA_RXPO(1/*PAD1*/) | SERCOM_USART_CTRLA_TXPO(0/*PAD0*/);
+			
+			// 8-bits size is selected as character size by setting the bit CHSIZE as 0,
+			// TXEN bit and RXEN bits are set to enable the Transmitter and receiver
+			SERCOM3->USART.CTRLB.reg = SERCOM_USART_CTRLB_RXEN | SERCOM_USART_CTRLB_TXEN | SERCOM_USART_CTRLB_CHSIZE(0/*8 bits*/);
+			
+			// baud register value corresponds to the device communication baud rate
+			SERCOM3->USART.BAUD.reg = (uint16_t)br;
 
-			// ==> Actual uart configuration
-			// Enable the peripheral uart controller
-			PMC->PMC_PCER0 = 1 << ID_UART;
+			// SERCOM3 peripheral enabled
+			SERCOM3->USART.CTRLA.reg |= SERCOM_USART_CTRLA_ENABLE;
 
-			// Reset and disable receiver and transmitter
-			UART->UART_CR = UART_CR_RSTRX | UART_CR_RSTTX | UART_CR_RXDIS | UART_CR_TXDIS;
-
-			// Set the baudrate
-			UART->UART_BRGR = (F_CPU/BaudRate)/16; //46; // 84,000,000 / 16 * x = BaudRate (write x into UART_BRGR)
-
-			// No Parity
-			UART->UART_MR = UART_MR_PAR_NO | UART_MR_CHMODE_NORMAL;
-
-			// Disable PDC channel
-			UART->UART_PTCR = UART_PTCR_RXTDIS | UART_PTCR_TXTDIS;
-
-			// Configure interrupts
-			UART->UART_IDR = 0xFFFFFFFF;
-			UART->UART_IER = UART_IER_RXRDY | UART_IER_OVRE | UART_IER_FRAME;
-
-			// Enable UART interrupt in NVIC
-			NVIC_EnableIRQ((IRQn_Type) ID_UART);
-
-			// Enable receiver and transmitter
-			UART->UART_CR = UART_CR_RXEN | UART_CR_TXEN;
-			break;
+			//Set the Interrupt to use
+			SERCOM3->USART.INTENSET.reg =
+			SERCOM_USART_INTENSET_RXC	;	// Interrupt on received complete
+			
+			// Enable interrupts
+			NVIC_EnableIRQ(SERCOM3_IRQn);
+			//	NVIC_SetPriority (SERCOM3_IRQn, (1<<__NVIC_PRIO_BITS) - 1);  // set Priority
+			
 		}
 		
 	}
@@ -69,32 +81,22 @@ void Hardware_Abstraction_Layer::Serial::initialize(uint8_t Port, uint32_t BaudR
 
 void Hardware_Abstraction_Layer::Serial::send(uint8_t Port, char byte)
 {
-	Usart * port_usart = NULL;
+	//Usart * port_usart = NULL;
 	switch (Port)
 	{
 		case 0:
 		{
-			//Wait until tx is ready.
-			//while(!(UART->UART_SR & UART_SR_TXRDY))
-			
-			//if((UART->UART_SR & UART_SR_TXRDY) != UART_SR_TXRDY)
-			//{
-			//	return;
-			//}
-
-			// Send the character
-			UART->UART_THR = byte;
-			while(!((UART->UART_SR) & UART_SR_TXEMPTY)); // Wait for the tx to complete
-			break;
+			while (!(SERCOM3->USART.INTFLAG.reg & SERCOM_USART_INTFLAG_DRE));
+			SERCOM3->USART.DATA.reg = byte;
 		}
 	}
 	if (Port>0)
 	{
 		//if((port_usart->US_CSR & US_CSR_RXRDY) != US_CSR_RXRDY)
-		while((port_usart->US_CSR & US_CSR_TXRDY) != US_CSR_TXRDY)
-		{
-		}
-		port_usart->US_THR = (uint8_t)(byte);
+		//while((port_usart->US_CSR & US_CSR_TXRDY) != US_CSR_TXRDY)
+		//{
+		//}
+		//port_usart->US_THR = (uint8_t)(byte);
 		
 		
 	}
@@ -143,16 +145,12 @@ void Hardware_Abstraction_Layer::Serial::_outgoing_serial_isr(uint8_t Port, char
 	//{Hardware_Abstraction_Layer::Serial::rxBuffer[Port].OverFlow=true;}
 }
 
-void UART_Handler(void)
+void SERCOM3_Handler()
 {
-	uint32_t status = UART->UART_SR;
-	//if((status & US_CSR_RXRDY) == US_CSR_RXRDY)
-	if((status & UART_SR_RXRDY))
+	if (SERCOM3->USART.INTFLAG.bit.RXC)
 	{
-		char Byte = UART->UART_RHR;
-		
-		
-		//UART->UART_THR = Byte;
+		char Byte = SERCOM3->USART.DATA.reg;
+		uint16_t rxData = SERCOM3->USART.DATA.reg;
 		Hardware_Abstraction_Layer::Serial::_incoming_serial_isr(0,Byte);
 	}
 }

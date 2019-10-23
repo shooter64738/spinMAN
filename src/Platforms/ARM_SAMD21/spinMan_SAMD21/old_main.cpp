@@ -9,7 +9,7 @@
 #include "sam.h"
 
 
-int main(void)
+int xmain(void)
 {
     /* Initialize the SAM system */
     SystemInit();

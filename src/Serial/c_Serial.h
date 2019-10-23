@@ -28,10 +28,10 @@
 #include "s_Buffer.h"
 
 //To enable compilation and debugging in Microsoft Visual C++ define MSCV
-#if !defined(__AVR_ATmega328P__) && !defined(__AVR_ATmega2560__) && !defined(__SAM3X8E__) && !defined(__SAMD21G18AU__)
-#define MSVC
-#endif
-
+//#if !defined(__AVR_ATmega328P__) && !defined(__AVR_ATmega2560__) && !defined(__SAM3X8E__) && !defined(__SAMD21G18AU__)
+//#define MSVC
+//#endif
+#include "../hardware_def.h"
 
 class c_Serial
 {
