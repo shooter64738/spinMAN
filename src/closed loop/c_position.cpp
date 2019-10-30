@@ -28,7 +28,7 @@ void Spin::ClosedLoop::Position::step(int32_t target, int32_t actual)
 {
 	//if (!_check_range(target))
 	//return;
-	Spin::ClosedLoop::Pid::scaler = 1.0;
+	//Spin::ClosedLoop::Pid::scaler = 1.0;
 	Spin::Configuration::Drive_Settings.Drive_Min_On_Value = 64500;
 	Spin::Configuration::User_Settings.Motor_Position_Error = 10;
 

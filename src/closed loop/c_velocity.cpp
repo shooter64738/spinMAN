@@ -18,7 +18,7 @@ uint16_t Spin::ClosedLoop::Velocity::Acceleration_Per_Cycle = 0;
 void Spin::ClosedLoop::Velocity::step(int32_t target, int32_t actual)
 {
 	//See if the target value is in range. If not ignore it all together.
-	Spin::ClosedLoop::Pid::scaler = 1;
+	//Spin::ClosedLoop::Pid::scaler = 1;
 	if (!_check_range(target))
 	return;
 

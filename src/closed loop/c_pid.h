@@ -44,7 +44,7 @@ namespace Spin
 			static int32_t raw_output;
 
 			static Spin::Configuration::s_pid_factors *active_factors;
-			static float scaler;
+			//static float scaler;
 			protected:
 			private:
 

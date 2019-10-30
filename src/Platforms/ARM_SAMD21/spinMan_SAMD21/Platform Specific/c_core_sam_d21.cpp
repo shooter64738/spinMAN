@@ -2,8 +2,7 @@
 
 void HardwareAbstractionLayer::Core::initialize()
 {
-SystemInit();
-	
+	SystemInit();
 }
 
 void HardwareAbstractionLayer::Core::start_interrupts()

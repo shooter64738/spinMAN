@@ -12,7 +12,7 @@
 static Spin::Configuration::s_pid_factors factors;
 static Spin::Configuration::s_pid_factors terms;
 Spin::Configuration::s_pid_factors *Spin::ClosedLoop::Pid::active_factors;
-float Spin::ClosedLoop::Pid::scaler;
+//float Spin::ClosedLoop::Pid::scaler;
 
 Spin::ClosedLoop::Pid::s_errors Spin::ClosedLoop::Pid::errors;
 static int32_t old_process_value = 0;
@@ -109,10 +109,6 @@ void Spin::ClosedLoop::Pid::_internal_pid_comp(int32_t processValue)
 	Spin::ClosedLoop::Pid::_set_p_term();//<--calculate p term from error and p factor
 	Spin::ClosedLoop::Pid::_set_i_term();//<--calculate i term from i factor and accumulated error
 	Spin::ClosedLoop::Pid::_set_d_term(processValue);//<--calculate d term from d factor and current error
-
-	float f_p = terms.Kp*scaler;
-	float f_i = terms.Ki*scaler;
-	float f_d = terms.Kd*scaler;
 
 	Spin::ClosedLoop::Pid::raw_output = (((terms.Kp)+(terms.Ki)+(terms.Kd)) / PID_SCALING_FACTOR);
 	Spin::ClosedLoop::Pid::output = (Spin::ClosedLoop::Pid::raw_output);

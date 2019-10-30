@@ -34,10 +34,12 @@ static uint16_t user_pos = 0;
 
 void Spin::Driver::Controller::initialize()
 {
+	
+	HardwareAbstractionLayer::Core::initialize();
+	
 	Spin::Driver::Controller::host_serial = c_Serial(0, 115200);//<-- Start serial at 115,200 baud on port 0
 	Spin::Driver::Controller::host_serial.print_string("proto type\r\n");//<-- Send hello message
-
-
+	
 	HardwareAbstractionLayer::Core::start_interrupts();//<--Start HW interrupts
 	Spin::Configuration::initiailize();//<--init and set default config
 	Spin::Configuration::load();//<--load user settings. if none exist defaults will load
@@ -112,7 +114,7 @@ void Spin::Driver::Controller::sync_out_in_control()
 	//Velocity modes direction is controlled by the user. Positions direction
 	//is controlled itnernally to reach its target
 	if (Spin::Input::Controls.in_mode != Spin::Enums::e_drive_modes::Position
-		&& (Spin::Input::Controls.direction != Spin::Output::Controls.direction))
+	&& (Spin::Input::Controls.direction != Spin::Output::Controls.direction))
 	{
 		
 		
